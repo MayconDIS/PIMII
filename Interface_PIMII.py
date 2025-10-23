@@ -7,8 +7,9 @@ import os
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import io
+import random
 
-# Configs
+# =================== CONFIGS ===================
 BASE_PROJECT_DIR = r"C:\Users\mayco\Documents\GitHub\PIMII"
 OUTPUT_DIR = os.path.join(BASE_PROJECT_DIR, "output")
 ARQUIVO_CREDENCIAIS = os.path.join(OUTPUT_DIR, "credenciais_alunos.csv")
@@ -24,15 +25,15 @@ BTN_FG = 'white'
 BTN_EXIT_BG = '#8B0000'
 BTN_AMARELO_CADASTRO = '#CCAA00'
 
-# Globals
-dados_alunos = []
+# =================== GLOBAIS ===================
+dados_alunos = []                 # lista de listas: cada aluno = [Nome,RA,Email,ling,py,eng,aps,media]
 caminho_arquivo_atual = None
 nivel_acesso_atual = None
-usuario_logado = None
+usuario_logado = None             # login em lowercase
 canvas_grafico = None
 botao_fechar_grafico = None
 janela_imagem_fundo = None
-NUM_COLUNAS_ESPERADAS = 8  # Nome,RA,Email,LingEstC,Python,EngSoft,APS,Media Geral
+NUM_COLUNAS_ESPERADAS = 8         # Nome,RA,Email,LingEstC,Python,EngSoft,APS,Media Geral
 
 # Credenciais iniciais
 CREDENCIAIS = {
@@ -68,13 +69,15 @@ COLUNA_MAP = {
     "Media Geral": 7
 }
 
-# ---------- Funções ----------
+# =================== UTILIDADES ===================
+
 def carregar_credenciais_alunos():
+    """Lê credenciais do arquivo de credenciais (se existir)."""
     novas_creds = {}
     if not os.path.exists(ARQUIVO_CREDENCIAIS):
         return novas_creds
     conteudo_bruto = None
-    for encoding in ['latin-1', 'utf-8']:
+    for encoding in ['utf-8', 'latin-1']:
         try:
             with open(ARQUIVO_CREDENCIAIS, 'r', encoding=encoding) as f:
                 conteudo_bruto = f.read()
@@ -126,11 +129,13 @@ def salvar_dados_no_csv(caminho, dados_novos, modo='a'):
         return False
 
 def _recalcular_media_geral(aluno):
+    """Recalcula média geral a partir das 4 disciplinas (índices 3..6)."""
     notas = []
     for i in range(3, 7):
         try:
-            if str(aluno[i]).strip():
-                notas.append(float(aluno[i]))
+            v = str(aluno[i]).strip()
+            if v != "":
+                notas.append(float(v))
         except Exception:
             pass
     if notas:
@@ -138,6 +143,75 @@ def _recalcular_media_geral(aluno):
         aluno[7] = f"{media:.2f}"
     else:
         aluno[7] = "0.00"
+
+# =================== JANELA FLUTUANTE (IMAGEM) ===================
+
+def mostrar_janela_imagem_flutuante(janela_login_obj, caminho_imagem):
+    """Cria e posiciona uma janela de imagem abaixo da janela de login."""
+    global janela_imagem_fundo
+    
+    janela_login_obj.update_idletasks()
+    
+    pos_x_login = janela_login_obj.winfo_x()
+    pos_y_login = janela_login_obj.winfo_y()
+    largura_login = janela_login_obj.winfo_width()
+    altura_login = janela_login_obj.winfo_height()
+    
+    largura_img = largura_login 
+    altura_img = 100 
+    MARGEM_VERTICAL = 40
+
+    if janela_imagem_fundo and janela_imagem_fundo.winfo_exists():
+        janela_imagem_fundo.geometry(f'{largura_img}x{altura_img}+{pos_x_login}+{pos_y_login + altura_login + MARGEM_VERTICAL}')
+        janela_imagem_fundo.lift()
+        janela_imagem_fundo.attributes('-topmost', True) 
+        return
+        
+    if not os.path.exists(caminho_imagem):
+        print(f"AVISO: Imagem flutuante '{caminho_imagem}' não encontrada.")
+        return
+
+    janela_imagem_fundo = tk.Toplevel(janela, bg=FRAME_BG) 
+    janela_imagem_fundo.title("Imagem Flutuante") 
+    
+    janela_imagem_fundo.attributes('-topmost', True) 
+    
+    try:
+        img_pil = Image.open(caminho_imagem).convert("RGB")
+        img_redimensionada = img_pil.resize((largura_img, altura_img), Image.LANCZOS)
+        img_tk_local = ImageTk.PhotoImage(img_redimensionada) 
+    except Exception as e:
+        print(f"ERRO ao carregar imagem flutuante: {e}. Verifique o formato do arquivo.")
+        janela_imagem_fundo.destroy()
+        return
+
+    frame_conteudo_img = tk.Frame(janela_imagem_fundo, bg=FRAME_BG)
+    frame_conteudo_img.pack(fill=tk.BOTH, expand=True)
+
+    label_fundo = tk.Label(frame_conteudo_img, image=img_tk_local, bg=FRAME_BG)
+    label_fundo.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+    
+    btn_fechar_img = tk.Button(janela_imagem_fundo, text="Fechar Imagem", 
+                               command=fechar_janela_imagem_fundo, 
+                               bg=BTN_EXIT_BG, fg="white", font=("Arial", 10, "bold"))
+    btn_fechar_img.pack(side=tk.BOTTOM, fill=tk.X, padx=5, pady=5)
+    
+    janela_imagem_fundo.photo_image = img_tk_local 
+    
+    janela_imagem_fundo.geometry(f'{largura_img}x{altura_img}+{pos_x_login}+{pos_y_login + altura_login + MARGEM_VERTICAL}') 
+    janela_imagem_fundo.lift() 
+    
+    janela_imagem_fundo.protocol("WM_DELETE_WINDOW", fechar_janela_imagem_fundo)
+
+
+def fechar_janela_imagem_fundo():
+    """Fecha a janela flutuante ao fechar o login.""" 
+    global janela_imagem_fundo
+    if janela_imagem_fundo and janela_imagem_fundo.winfo_exists():
+        janela_imagem_fundo.destroy()
+        janela_imagem_fundo = None
+
+# =================== FUNÇÕES DE DADOS E INTERFACE ===================
 
 def selecionar_arquivo(caminho=None):
     global caminho_arquivo_atual, dados_alunos
@@ -186,7 +260,6 @@ def selecionar_arquivo(caminho=None):
     for i, linha in enumerate(todas_linhas[1:], start=1):
         if len(linha) >= NUM_COLUNAS_ESPERADAS:
             linha_usavel = linha[:NUM_COLUNAS_ESPERADAS]
-            # Assegura que todos os campos existam e não sejam None
             while len(linha_usavel) < NUM_COLUNAS_ESPERADAS:
                 linha_usavel.append("0.00")
             _recalcular_media_geral(linha_usavel)
@@ -440,7 +513,91 @@ def mostrar_professores():
         texto += f"{chave}: {professor_login.capitalize()}\n"
     tk.Label(janela_professores, text=texto, font=("Arial", 12), justify=tk.LEFT, padx=20, pady=20).pack()
 
-# ---------- Login e UI ----------
+# =================== I.A: análise disciplinar e mensagem personalizada ===================
+
+def analisar_por_ia():
+    """Analisa as notas do aluno logado, identifica disciplina mais fraca/forte e mostra mensagem."""
+    if nivel_acesso_atual != "Alunos":
+        messagebox.showwarning("Acesso Negado", "Apenas alunos podem usar a I.A motivacional.")
+        return
+
+    if not dados_alunos:
+        messagebox.showwarning("Aviso", "Nenhum aluno carregado. Carregue o CSV primeiro.")
+        return
+
+    # Localiza o aluno pelo login (primeiro nome em lowercase)
+    aluno = None
+    for a in dados_alunos:
+        primeiro_login = a[0].split()[0].lower()
+        if primeiro_login == usuario_logado:
+            aluno = a
+            break
+
+    if aluno is None:
+        messagebox.showerror("Erro", "Cadastro do aluno não encontrado nos dados carregados.")
+        return
+
+    disciplinas = ["LingEstC","Python","EngSoft","APS"]
+    notas = []
+    for i in range(3,7):
+        try:
+            notas.append(float(aluno[i]))
+        except Exception:
+            notas.append(0.0)
+
+    # Cálculos
+    media_geral = sum(notas) / len(notas) if notas else 0.0
+    menor_nota = min(notas)
+    maior_nota = max(notas)
+    disc_mais_fraca = disciplinas[notas.index(menor_nota)]
+    disc_mais_forte = disciplinas[notas.index(maior_nota)]
+
+    # Mensagens
+    motivacionais = [
+        f"Não desista! Sua disciplina mais fraca é {disc_mais_fraca} ({menor_nota:.2f}). "
+        "Pequenas ações diárias fazem grande diferença. Tente revisar 30 minutos por dia.",
+        f"Foco em {disc_mais_fraca}! Identificamos {menor_nota:.2f} — organize sessões curtas de estudo e peça ajuda ao professor.",
+        f"Você pode melhorar em {disc_mais_fraca}. Experimente exercícios práticos e revisar os tópicos fundamentais.",
+    ]
+    parabens = [
+        f"Parabéns! Você se destacou em {disc_mais_forte} com {maior_nota:.2f}. Continue assim!",
+        f"Excelente trabalho! Sua maior força é {disc_mais_forte} ({maior_nota:.2f}). Mantenha esse ritmo!",
+        f"Incrível desempenho em {disc_mais_forte}. Isso mostra que seu esforço está dando resultado.",
+    ]
+    neutras = [
+        f"Você está progredindo. Sua menor nota foi em {disc_mais_fraca} ({menor_nota:.2f}). Ajustes pontuais vão ajudar.",
+        f"Bom trabalho! Continue praticando. {disc_mais_fraca} ({menor_nota:.2f}) merece atenção, mas a média geral é {media_geral:.2f}.",
+        f"Está quase lá! Revise {disc_mais_fraca} e consolide seus conhecimentos — sua média atual é {media_geral:.2f}.",
+    ]
+
+    if media_geral <= 5.0:
+        titulo = "💡 Sugestões da I.A - Vamos melhorar!"
+        texto = random.choice(motivacionais)
+    elif media_geral >= 7.0:
+        titulo = "🎉 Sugestões da I.A - Excelente!"
+        texto = random.choice(parabens)
+    else:
+        titulo = "📘 Sugestões da I.A - Progresso"
+        texto = random.choice(neutras)
+
+    # Janela de exibição
+    j = tk.Toplevel(janela)
+    j.title("Sugestão Inteligente (I.A)")
+    j.geometry("480x220")
+    j.config(bg=FRAME_BG)
+
+    tk.Label(j, text=titulo, bg=FRAME_BG, fg="#FFD700", font=("Arial", 13, "bold")).pack(pady=(12,6))
+    tk.Message(j, text=texto, bg=FRAME_BG, fg="white", font=("Arial", 11), width=440).pack(padx=10, pady=6)
+
+    # Sugestão extra: link rápido de ação (simples placeholder)
+    def abrir_acao_rapida():
+        messagebox.showinfo("Ação Rápida", f"Tente revisar 3 tópicos principais de {disc_mais_fraca} essa semana.")
+
+    tk.Button(j, text="Ação Rápida", bg=BTN_ROXO_CLARO, fg="white", command=abrir_acao_rapida).pack(side=tk.LEFT, padx=20, pady=12)
+    tk.Button(j, text="Fechar", bg=BTN_EXIT_BG, fg="white", command=j.destroy).pack(side=tk.RIGHT, padx=20, pady=12)
+
+# =================== LOGIN E HABILITAÇÃO DE BOTOES ===================
+
 def verificar_credenciais(usuario, senha):
     credenciais_dinamicas = carregar_credenciais_alunos()
     CREDENCIAIS["Alunos"].update({k.lower(): v for k, v in credenciais_dinamicas.items()})
@@ -462,18 +619,21 @@ def habilitar_botoes(nivel):
         "lancar_notas": btn_lancar_notas,
         "notas": btn_ver_notas,
         "grafico": btn_gerar_grafico,
-        "professores": btn_ver_professores
+        "professores": btn_ver_professores,
+        "ia": btn_ia
     }
+    # Desabilita todos por padrão
     for btn in botoes_controle.values():
-        btn.config(state=tk.DISABLED)
+        btn.config(state=tk.DISABLED, bg=BTN_ROXO_BASE)
+    # Habilita conforme nível
     if nivel == "Admin":
-        for btn in botoes_controle.values():
-            btn.config(state=tk.NORMAL, bg=BTN_ROXO_CLARO)
+        for key in ["csv", "lancar_notas", "notas", "grafico", "professores"]:
+            botoes_controle[key].config(state=tk.NORMAL, bg=BTN_ROXO_CLARO)
     elif nivel == "Professores":
-        for key in ["csv","lancar_notas","notas","grafico","professores"]:
+        for key in ["csv", "lancar_notas", "notas", "grafico", "professores"]:
             botoes_controle[key].config(state=tk.NORMAL, bg=BTN_ROXO_CLARO)
     elif nivel == "Alunos":
-        for key in ["csv","notas","grafico","professores"]:
+        for key in ["csv", "notas", "grafico", "professores", "ia"]:
             botoes_controle[key].config(state=tk.NORMAL, bg=BTN_ROXO_CLARO)
     btn_sair.config(bg=BTN_EXIT_BG, state=tk.NORMAL)
 
@@ -524,74 +684,10 @@ def mostrar_janela_login():
     tk.Button(login_frame, text="Cadastre-se", bg=BTN_AMARELO_CADASTRO, fg="white",
               command=lambda: cadastrar_novo_aluno_interface(janela_login)).grid(row=3, column=0, columnspan=2, pady=5, sticky="ew")
     caminho_da_sua_imagem = os.path.join(BASE_PROJECT_DIR, "UNIP.jpg")
+    # Mostra a imagem flutuante 10ms depois (permite a janela de login renderizar)
     janela.after(10, lambda: mostrar_janela_imagem_flutuante(janela_login, caminho_da_sua_imagem))
     janela_login.protocol("WM_DELETE_WINDOW", lambda: [fechar_janela_imagem_fundo(), janela.destroy()])
     user_entry.focus_set()
-
-def mostrar_janela_imagem_flutuante(janela_login_obj, caminho_imagem):
-    """Cria e posiciona uma janela de imagem abaixo da janela de login."""
-    global janela_imagem_fundo
-    
-    janela_login_obj.update_idletasks()
-    
-    pos_x_login = janela_login_obj.winfo_x()
-    pos_y_login = janela_login_obj.winfo_y()
-    largura_login = janela_login_obj.winfo_width()
-    altura_login = janela_login_obj.winfo_height()
-    
-    largura_img = largura_login 
-    altura_img = 100 
-    MARGEM_VERTICAL = 40
-
-    if janela_imagem_fundo and janela_imagem_fundo.winfo_exists():
-        janela_imagem_fundo.geometry(f'{largura_img}x{altura_img}+{pos_x_login}+{pos_y_login + altura_login + MARGEM_VERTICAL}')
-        janela_imagem_fundo.lift()
-        janela_imagem_fundo.attributes('-topmost', True) 
-        return
-        
-    if not os.path.exists(caminho_imagem):
-        print(f"AVISO: Imagem flutuante '{caminho_imagem}' não encontrada.")
-        return
-
-    janela_imagem_fundo = tk.Toplevel(janela, bg=FRAME_BG) 
-    janela_imagem_fundo.title("Imagem Flutuante") 
-    
-    janela_imagem_fundo.attributes('-topmost', True) 
-    
-    try:
-        img_pil = Image.open(caminho_imagem).convert("RGB")
-        img_redimensionada = img_pil.resize((largura_img, altura_img), Image.LANCZOS)
-        img_tk_local = ImageTk.PhotoImage(img_redimensionada) 
-    except Exception as e:
-        print(f"ERRO ao carregar imagem flutuante: {e}. Verifique o formato do arquivo.")
-        janela_imagem_fundo.destroy()
-        return
-
-    frame_conteudo_img = tk.Frame(janela_imagem_fundo, bg=FRAME_BG)
-    frame_conteudo_img.pack(fill=tk.BOTH, expand=True)
-
-    label_fundo = tk.Label(frame_conteudo_img, image=img_tk_local, bg=FRAME_BG)
-    label_fundo.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
-    
-    btn_fechar_img = tk.Button(janela_imagem_fundo, text="Fechar Imagem", 
-                               command=fechar_janela_imagem_fundo, 
-                               bg=BTN_EXIT_BG, fg="white", font=("Arial", 10, "bold"))
-    btn_fechar_img.pack(side=tk.BOTTOM, fill=tk.X, padx=5, pady=5)
-    
-    janela_imagem_fundo.photo_image = img_tk_local 
-    
-    janela_imagem_fundo.geometry(f'{largura_img}x{altura_img}+{pos_x_login}+{pos_y_login + altura_login + MARGEM_VERTICAL}') 
-    janela_imagem_fundo.lift() 
-    
-    janela_imagem_fundo.protocol("WM_DELETE_WINDOW", fechar_janela_imagem_fundo)
-
-
-def fechar_janela_imagem_fundo():
-    """Fecha a janela flutuante ao fechar o login.""" 
-    global janela_imagem_fundo
-    if janela_imagem_fundo and janela_imagem_fundo.winfo_exists():
-        janela_imagem_fundo.destroy()
-        janela_imagem_fundo = None
 
 def cadastrar_novo_aluno_interface(janela_login=None):
     global caminho_arquivo_atual
@@ -634,7 +730,8 @@ def cadastrar_novo_aluno_interface(janela_login=None):
     if janela_login:
         janela_login.deiconify()
 
-# ---------- UI principal ----------
+# =================== INTERFACE PRINCIPAL ===================
+
 janela = tk.Tk()
 janela.title("Sistema Acadêmico - Login Necessário")
 janela.config(bg=BG_DARK)
@@ -662,14 +759,19 @@ btn_selecionar = tk.Button(frame_botoes, text="Selecionar Arquivo CSV", command=
 btn_selecionar.grid(row=0, column=0, padx=5)
 btn_lancar_notas = tk.Button(frame_botoes, text="Lançar Notas", command=lancar_nota, bg=BTN_ROXO_CLARO, fg=BTN_FG)
 btn_lancar_notas.grid(row=0, column=1, padx=5)
-btn_ver_notas = tk.Button(frame_botoes, text="Ver Notas de um Aluno", command=mostrar_notas, bg=BTN_ROXO_CLARO, fg=BTN_FG)
+btn_ver_notas = tk.Button(frame_botoes, text="Ver Notas", command=mostrar_notas, bg=BTN_ROXO_CLARO, fg=BTN_FG)
 btn_ver_notas.grid(row=0, column=2, padx=5)
-btn_gerar_grafico = tk.Button(frame_botoes, text="Gerar Gráfico de um Aluno", command=gerar_grafico, bg=BTN_ROXO_CLARO, fg=BTN_FG)
+btn_gerar_grafico = tk.Button(frame_botoes, text="Gerar Gráfico", command=gerar_grafico, bg=BTN_ROXO_CLARO, fg=BTN_FG)
 btn_gerar_grafico.grid(row=0, column=3, padx=5)
 btn_ver_professores = tk.Button(frame_botoes, text="Ver Professores", command=mostrar_professores, bg=BTN_ROXO_CLARO, fg=BTN_FG)
 btn_ver_professores.grid(row=0, column=4, padx=5)
+
+# Botão I.A (será habilitado apenas para Alunos)
+btn_ia = tk.Button(frame_botoes, text="I.A", command=analisar_por_ia, bg=BTN_ROXO_BASE, fg="white", font=("Arial", 10, "bold"))
+btn_ia.grid(row=0, column=5, padx=5)
+
 btn_sair = tk.Button(frame_botoes, text="Sair", command=janela.destroy, bg=BTN_EXIT_BG, fg=BTN_FG, font=("Arial", 10))
-btn_sair.grid(row=0, column=5, padx=5)
+btn_sair.grid(row=0, column=6, padx=5)
 
 frame_tree = tk.Frame(frame_principal_interativo, bg=BG_DARK)
 frame_tree.pack(padx=10, pady=10, fill=tk.BOTH, expand=True)
