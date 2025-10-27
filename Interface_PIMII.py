@@ -798,13 +798,15 @@ def mostrar_professores():
 
     tk.Label(janela_professores, text=texto, font=("Arial", 12), justify=tk.LEFT, padx=20, pady=20).pack()
 
-
 # =================== I.A: análise disciplinar e mensagem personalizada ===================
 
+# --- FUNÇÃO ATUALIZADA (centralização da janela) ---
 def analisar_por_ia():
+    """Analisa as notas do aluno logado, identifica disciplina mais fraca/forte e mostra mensagem."""
     if nivel_acesso_atual != "Alunos":
         messagebox.showwarning("Acesso Negado", "Apenas alunos podem usar a I.A motivacional.")
         return
+
     if not dados_alunos:
         messagebox.showwarning("Aviso", "Nenhum aluno carregado. Carregue o CSV primeiro.")
         return
@@ -891,20 +893,43 @@ def analisar_por_ia():
         titulo = "📘 Sugestões da I.A - Progresso"
         texto = random.choice(neutras)
 
+    # --- Janela de exibição ATUALIZADA ---
     j = tk.Toplevel(janela)
     j.title("Sugestão Inteligente (I.A)")
-    j.geometry("480x220")
     j.config(bg=FRAME_BG)
+    j.transient(janela) # Faz a janela IA depender da principal
+    j.grab_set() # Torna a janela IA modal
+
+    largura_ia = 480
+    altura_ia = 220
+
+    # Calcula posição para centralizar em relação à janela principal
+    janela.update_idletasks() # Garante que as dimensões da janela principal estão atualizadas
+    pos_x_janela = janela.winfo_x()
+    pos_y_janela = janela.winfo_y()
+    largura_janela = janela.winfo_width()
+    altura_janela = janela.winfo_height()
+
+    pos_x = pos_x_janela + (largura_janela // 2) - (largura_ia // 2)
+    pos_y = pos_y_janela + (altura_janela // 2) - (altura_ia // 2)
+
+    j.geometry(f'{largura_ia}x{altura_ia}+{pos_x}+{pos_y}')
+    j.resizable(False, False) # Impede redimensionamento
+    # --- Fim da atualização da janela ---
 
     tk.Label(j, text=titulo, bg=FRAME_BG, fg="#FFD700", font=("Arial", 13, "bold")).pack(pady=(12,6))
     tk.Message(j, text=texto, bg=FRAME_BG, fg="white", font=("Arial", 11), width=440).pack(padx=10, pady=6)
 
     def abrir_acao_rapida():
-        messagebox.showinfo("Ação Rápida", f"Tente revisar 3 tópicos principais de {disc_display_fraca} essa semana.")
+        # Mostra a mensagem relativa à janela IA
+        messagebox.showinfo("Ação Rápida", f"Tente revisar 3 tópicos principais de {disc_display_fraca} essa semana.", parent=j)
 
     tk.Button(j, text="Ação Rápida", bg=BTN_ROXO_CLARO, fg="white", command=abrir_acao_rapida).pack(side=tk.LEFT, padx=20, pady=12)
     tk.Button(j, text="Fechar", bg=BTN_EXIT_BG, fg="white", command=j.destroy).pack(side=tk.RIGHT, padx=20, pady=12)
 
+    # Define o foco inicial para o botão fechar, por exemplo
+    j.focus_force()
+    j.winfo_children()[-1].focus_set() # Foca no último widget adicionado (botão fechar)
 
 # =================== LOGIN E HABILITAÇÃO DE BOTOES ===================
 
