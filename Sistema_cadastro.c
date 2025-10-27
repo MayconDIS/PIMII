@@ -1,3 +1,4 @@
+// Sistema_cadastro.c
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -466,7 +467,7 @@ int main() {
 
     int escolha;
     do {
-        printf("\n--- Sistema de Cadastro Simplificado (C) ---\n");
+        printf("\n--- Sistema de Cadastro (C) ---\n");
         printf("1. Cadastrar Novo Aluno\n");
         printf("2. Cadastrar Novo Professor (Requer Senha Admin)\n");
         printf("3. Sair\n");
