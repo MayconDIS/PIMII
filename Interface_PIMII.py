@@ -84,6 +84,8 @@ PROFESSOR_TO_COLNAME = {
 }
 
 # =================== UTILIDADES ===================
+
+# --- INÍCIO: carregar_nomes_disciplinas ---
 def carregar_nomes_disciplinas():
     """Carrega os nomes de exibição das disciplinas a partir do CSV."""
     global DISPLAY_NAMES
@@ -109,11 +111,13 @@ def carregar_nomes_disciplinas():
     except Exception as e:
         print(f"Erro ao carregar nomes de disciplinas: {e}. Usando padrões.")
         salvar_nomes_disciplinas()
+# --- FIM: carregar_nomes_disciplinas ---
 
+# --- INÍCIO: salvar_nomes_disciplinas ---
 # --- ATUALIZADO (makedirs) ---
 def salvar_nomes_disciplinas():
     """Salva o mapa de nomes de exibição (DISPLAY_NAMES) no CSV."""
-    os.makedirs(CONFIDENTIAL_DATA_DIR, exist_ok=True) # <<< MUDANÇA AQUI
+    os.makedirs(CONFIDENTIAL_DATA_DIR, exist_ok=True) 
     try:
         with open(ARQUIVO_NOMES_DISCIPLINAS, "w", newline='', encoding='utf-8') as f:
             writer = csv.writer(f)
@@ -125,7 +129,9 @@ def salvar_nomes_disciplinas():
     except Exception as e:
         messagebox.showwarning("Aviso", f"Houve erro ao salvar os nomes das disciplinas: {e}")
         return False
+# --- FIM: salvar_nomes_disciplinas ---
 
+# --- INÍCIO: carregar_credenciais_alunos ---
 def carregar_credenciais_alunos():
     novas_creds = {}
     if not os.path.exists(ARQUIVO_CREDENCIAIS):
@@ -152,10 +158,12 @@ def carregar_credenciais_alunos():
     except Exception:
         pass
     return novas_creds
+# --- FIM: carregar_credenciais_alunos ---
 
+# --- INÍCIO: salvar_credenciais_csv ---
 # --- ATUALIZADO (makedirs) ---
 def salvar_credenciais_csv(login, senha):
-    os.makedirs(CONFIDENTIAL_DATA_DIR, exist_ok=True) # <<< MUDANÇA AQUI
+    os.makedirs(CONFIDENTIAL_DATA_DIR, exist_ok=True) 
     try:
         adicionar_cabecalho = not os.path.exists(ARQUIVO_CREDENCIAIS) or os.path.getsize(ARQUIVO_CREDENCIAIS) == 0
         with open(ARQUIVO_CREDENCIAIS, "a", newline='', encoding='utf-8') as arq_creds:
@@ -167,11 +175,13 @@ def salvar_credenciais_csv(login, senha):
     except Exception as e:
         messagebox.showwarning("Aviso", f"Houve erro ao salvar as credenciais: {e}")
         return False
+# --- FIM: salvar_credenciais_csv ---
 
+# --- INÍCIO: salvar_dados_no_csv ---
 # --- ATUALIZADO (makedirs) ---
 # Nota: Esta função salva o ALUNOS.CSV, que deixamos no OUTPUT_DIR
 def salvar_dados_no_csv(caminho, dados_novos, modo='a'):
-    os.makedirs(OUTPUT_DIR, exist_ok=True) # <<< MANTIDO COMO OUTPUT_DIR
+    os.makedirs(OUTPUT_DIR, exist_ok=True) 
     cabecalho = ["Nome","RA","Email"] + LISTA_DISCIPLINAS + ["Media Geral"]
     try:
         adicionar_cabecalho = not os.path.exists(caminho) or os.path.getsize(caminho) == 0
@@ -184,7 +194,9 @@ def salvar_dados_no_csv(caminho, dados_novos, modo='a'):
     except Exception as e:
         messagebox.showerror("Erro de Salvamento", f"Não foi possível salvar o arquivo: {e}")
         return False
+# --- FIM: salvar_dados_no_csv ---
 
+# --- INÍCIO: _recalcular_media_geral ---
 def _recalcular_media_geral(aluno):
     notas = []
     for i in range(3, 3 + len(LISTA_DISCIPLINAS)):
@@ -201,7 +213,9 @@ def _recalcular_media_geral(aluno):
         aluno[media_idx] = f"{media:.2f}"
     else:
         aluno[media_idx] = "0.00"
+# --- FIM: _recalcular_media_geral ---
 
+# --- INÍCIO: carregar_credenciais_professores ---
 def carregar_credenciais_professores():
     novas_creds = {}
     if not os.path.exists(ARQUIVO_CREDENCIAIS_PROFESSORES):
@@ -230,7 +244,9 @@ def carregar_credenciais_professores():
     except Exception:
         pass
     return novas_creds
+# --- FIM: carregar_credenciais_professores ---
 
+# --- INÍCIO: carregar_mapeamento_professores ---
 def carregar_mapeamento_professores():
     novo_map = {}
     if not os.path.exists(ARQUIVO_MAPEAMENTO_PROFESSORES):
@@ -259,10 +275,12 @@ def carregar_mapeamento_professores():
     except Exception:
         pass
     return novo_map
+# --- FIM: carregar_mapeamento_professores ---
 
+# --- INÍCIO: salvar_credenciais_professor_csv ---
 # --- ATUALIZADO (makedirs) ---
 def salvar_credenciais_professor_csv(login, senha):
-    os.makedirs(CONFIDENTIAL_DATA_DIR, exist_ok=True) # <<< MUDANÇA AQUI
+    os.makedirs(CONFIDENTIAL_DATA_DIR, exist_ok=True) 
     try:
         adicionar_cabecalho = not os.path.exists(ARQUIVO_CREDENCIAIS_PROFESSORES) or os.path.getsize(ARQUIVO_CREDENCIAIS_PROFESSORES) == 0
         with open(ARQUIVO_CREDENCIAIS_PROFESSORES, "a", newline='', encoding='utf-8') as arq_creds:
@@ -274,10 +292,12 @@ def salvar_credenciais_professor_csv(login, senha):
     except Exception as e:
         messagebox.showwarning("Aviso", f"Houve erro ao salvar as credenciais do professor: {e}")
         return False
+# --- FIM: salvar_credenciais_professor_csv ---
 
+# --- INÍCIO: salvar_mapeamento_professor_csv ---
 # --- ATUALIZADO (makedirs) ---
 def salvar_mapeamento_professor_csv(login, disciplina_interna):
-    os.makedirs(CONFIDENTIAL_DATA_DIR, exist_ok=True) # <<< MUDANÇA AQUI
+    os.makedirs(CONFIDENTIAL_DATA_DIR, exist_ok=True) 
     try:
         adicionar_cabecalho = not os.path.exists(ARQUIVO_MAPEAMENTO_PROFESSORES) or os.path.getsize(ARQUIVO_MAPEAMENTO_PROFESSORES) == 0
         with open(ARQUIVO_MAPEAMENTO_PROFESSORES, "a", newline='', encoding='utf-8') as arq_map:
@@ -289,7 +309,9 @@ def salvar_mapeamento_professor_csv(login, disciplina_interna):
     except Exception as e:
         messagebox.showwarning("Aviso", f"Houve erro ao salvar o mapeamento do professor: {e}")
         return False
+# --- FIM: salvar_mapeamento_professor_csv ---
 
+# --- INÍCIO: carregar_dados_professores ---
 def carregar_dados_professores():
     global CREDENCIAIS, PROFESSOR_TO_COLNAME, PROFESSORES_POR_DISCIPLINA
     
@@ -305,8 +327,11 @@ def carregar_dados_professores():
             PROFESSORES_POR_DISCIPLINA[disciplina] = login
         
     print("Dados de professores carregados e mesclados.")
+# --- FIM: carregar_dados_professores ---
 
 # =================== JANELA FLUTUANTE (IMAGEM) ===================
+
+# --- INÍCIO: mostrar_janela_imagem_flutuante ---
 def mostrar_janela_imagem_flutuante(janela_login_obj, caminho_imagem):
     """Cria e posiciona uma janela de imagem abaixo da janela de login."""
     global janela_imagem_fundo
@@ -355,8 +380,8 @@ def mostrar_janela_imagem_flutuante(janela_login_obj, caminho_imagem):
     label_fundo.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
     
     btn_fechar_img = tk.Button(janela_imagem_fundo, text="Fechar Imagem", 
-                                command=fechar_janela_imagem_fundo, 
-                                bg=BTN_EXIT_BG, fg="white", font=("Arial", 10, "bold"))
+                               command=fechar_janela_imagem_fundo, 
+                               bg=BTN_EXIT_BG, fg="white", font=("Arial", 10, "bold"))
     btn_fechar_img.pack(side=tk.BOTTOM, fill=tk.X, padx=5, pady=5)
     
     janela_imagem_fundo.photo_image = img_tk_local 
@@ -365,22 +390,27 @@ def mostrar_janela_imagem_flutuante(janela_login_obj, caminho_imagem):
     janela_imagem_fundo.lift() 
     
     janela_imagem_fundo.protocol("WM_DELETE_WINDOW", fechar_janela_imagem_fundo)
+# --- FIM: mostrar_janela_imagem_flutuante ---
 
+# --- INÍCIO: fechar_janela_imagem_fundo ---
 def fechar_janela_imagem_fundo():
     """Fecha a janela flutuante ao fechar o login.""" 
     global janela_imagem_fundo
     if janela_imagem_fundo and janela_imagem_fundo.winfo_exists():
         janela_imagem_fundo.destroy()
         janela_imagem_fundo = None
+# --- FIM: fechar_janela_imagem_fundo ---
 
 # =================== FUNÇÕES DE DADOS E INTERFACE ===================
+
+# --- INÍCIO: selecionar_arquivo ---
 def selecionar_arquivo(caminho=None):
     global caminho_arquivo_atual, dados_alunos
-    caminho_padrao_dados = DEFAULT_CSV_FILE_PATH # <<< USA O CAMINHO COMPLETO
+    caminho_padrao_dados = DEFAULT_CSV_FILE_PATH 
     if caminho is None:
         caminho = filedialog.askopenfilename(
             title="Selecione o arquivo CSV de alunos",
-            initialdir=OUTPUT_DIR, # <<< Inicia no output principal
+            initialdir=OUTPUT_DIR, 
             filetypes=[("Arquivos CSV", "*.csv"), ("Todos os arquivos", "*.*")]
         )
     if not caminho and os.path.exists(caminho_padrao_dados):
@@ -427,11 +457,14 @@ def selecionar_arquivo(caminho=None):
         return
     dados_alunos = dados_validos
     mostrar_todos_alunos()
+# --- FIM: selecionar_arquivo ---
 
 # Funções lancar_nota, mostrar_todos_alunos, obter_indice_aluno, 
 # mostrar_notas, gerar_grafico, mostrar_professores, analisar_por_ia
 # JÁ ESTÃO CORRETAS (usando DISPLAY_NAMES onde necessário)
 # ... (código dessas funções omitido para brevidade, mantenha o seu) ...
+
+# --- INÍCIO: lancar_nota ---
 def lancar_nota():
     if nivel_acesso_atual not in ["Admin", "Professores"]:
         messagebox.showwarning("Acesso Negado", "Apenas Administradores e Professores podem lançar notas.")
@@ -534,7 +567,9 @@ def lancar_nota():
     except ValueError:
         messagebox.showerror("Erro", "Nota inválida. Digite um número.")
         return
+# --- FIM: lancar_nota ---
 
+# --- INÍCIO: mostrar_todos_alunos ---
 def mostrar_todos_alunos():
     for item in tree.get_children():
         tree.delete(item)
@@ -595,7 +630,9 @@ def mostrar_todos_alunos():
             tree.insert("", "end", values=dados_finais)
         else:
             tree.insert("", "end", values=dados_para_tree)
+# --- FIM: mostrar_todos_alunos ---
 
+# --- INÍCIO: obter_indice_aluno ---
 def obter_indice_aluno():
     if not dados_alunos:
         messagebox.showwarning("Aviso", "Nenhum aluno carregado.")
@@ -605,10 +642,10 @@ def obter_indice_aluno():
         for i, aluno in enumerate(dados_alunos):
             # Garante que aluno[0] existe antes de dividir
             if aluno and isinstance(aluno[0], str) and aluno[0].split():
-                 if aluno[0].split()[0].lower() == usuario_aluno:
-                    return i
+                   if aluno[0].split()[0].lower() == usuario_aluno:
+                       return i
             else:
-                 print(f"Aviso: Aluno com formato inesperado encontrado ao obter índice: {aluno}")
+                   print(f"Aviso: Aluno com formato inesperado encontrado ao obter índice: {aluno}")
         messagebox.showerror("Erro", f"Seu login ({usuario_aluno.capitalize()}) não foi encontrado na lista de alunos carregada.")
         return None
     try:
@@ -623,7 +660,9 @@ def obter_indice_aluno():
     except Exception:
         messagebox.showerror("Erro", "Entrada inválida.")
         return None
+# --- FIM: obter_indice_aluno ---
 
+# --- INÍCIO: mostrar_notas ---
 def mostrar_notas():
     indice = obter_indice_aluno()
     if indice is None:
@@ -656,9 +695,9 @@ def mostrar_notas():
             # Verifica se o índice existe antes de acessá-lo
             col_idx = COLUNA_MAP.get(disc_interna)
             if col_idx is not None and col_idx < len(aluno):
-                 texto += f"{display_name}: {aluno[col_idx]}\n"
+                  texto += f"{display_name}: {aluno[col_idx]}\n"
             else:
-                 texto += f"{display_name}: (Erro: dado ausente)\n"
+                  texto += f"{display_name}: (Erro: dado ausente)\n"
 
         texto += f"\n============================\n"
         media_display = DISPLAY_NAMES.get("Media Geral", "Media Geral")
@@ -669,7 +708,9 @@ def mostrar_notas():
              texto += f"{media_display.upper()}: (Erro: dado ausente)\n"
 
     tk.Label(janela_notas, text=texto, font=("Arial", 11), justify=tk.LEFT, padx=20, pady=20).pack()
+# --- FIM: mostrar_notas ---
 
+# --- INÍCIO: gerar_grafico ---
 def gerar_grafico():
     indice = obter_indice_aluno()
     if indice is None:
@@ -756,6 +797,7 @@ def gerar_grafico():
     canvas_grafico.draw()
     canvas_grafico.get_tk_widget().pack(pady=10, padx=10, fill=tk.BOTH, expand=False)
 
+    # --- INÍCIO: fechar (aninhada) ---
     def fechar():
         global canvas_grafico, botao_fechar_grafico
         if canvas_grafico is not None:
@@ -764,10 +806,13 @@ def gerar_grafico():
         if botao_fechar_grafico is not None:
             botao_fechar_grafico.destroy()
             botao_fechar_grafico = None
+    # --- FIM: fechar (aninhada) ---
 
     botao_fechar_grafico = tk.Button(janela, text="Fechar Gráfico", command=fechar, bg="red", fg="white")
     botao_fechar_grafico.pack(pady=5)
+# --- FIM: gerar_grafico ---
 
+# --- INÍCIO: mostrar_professores ---
 def mostrar_professores():
     janela_professores = tk.Toplevel(janela)
     janela_professores.title("Professores e Disciplinas")
@@ -785,8 +830,11 @@ def mostrar_professores():
              texto += f"{display_name}: (Vago)\n"
 
     tk.Label(janela_professores, text=texto, font=("Arial", 12), justify=tk.LEFT, padx=20, pady=20).pack()
+# --- FIM: mostrar_professores ---
 
 # =================== I.A: análise disciplinar e mensagem personalizada ===================
+
+# --- INÍCIO: analisar_por_ia ---
 def analisar_por_ia():
     """Analisa as notas do aluno logado, identifica disciplina mais fraca/forte e mostra mensagem."""
     if nivel_acesso_atual != "Alunos":
@@ -803,8 +851,8 @@ def analisar_por_ia():
         if a and isinstance(a[0], str) and a[0].split():
              primeiro_login = a[0].split()[0].lower()
              if primeiro_login == usuario_logado:
-                aluno = a
-                break
+                 aluno = a
+                 break
         else:
              print(f"Aviso: Aluno com formato inesperado encontrado na IA: {a}")
 
@@ -905,9 +953,11 @@ def analisar_por_ia():
     tk.Label(j, text=titulo, bg=FRAME_BG, fg="#FFD700", font=("Arial", 13, "bold")).pack(pady=(12,6))
     tk.Message(j, text=texto, bg=FRAME_BG, fg="white", font=("Arial", 11), width=440).pack(padx=10, pady=6)
 
+    # --- INÍCIO: abrir_acao_rapida (aninhada) ---
     def abrir_acao_rapida():
         # Mostra a mensagem relativa à janela IA
         messagebox.showinfo("Ação Rápida", f"Tente revisar 3 tópicos principais de {disc_display_fraca} essa semana.", parent=j)
+    # --- FIM: abrir_acao_rapida (aninhada) ---
 
     tk.Button(j, text="Ação Rápida", bg=BTN_ROXO_CLARO, fg="white", command=abrir_acao_rapida).pack(side=tk.LEFT, padx=20, pady=12)
     tk.Button(j, text="Fechar", bg=BTN_EXIT_BG, fg="white", command=j.destroy).pack(side=tk.RIGHT, padx=20, pady=12)
@@ -915,8 +965,11 @@ def analisar_por_ia():
     # Define o foco inicial para o botão fechar, por exemplo
     j.focus_force()
     j.winfo_children()[-1].focus_set() # Foca no último widget adicionado (botão fechar)
+# --- FIM: analisar_por_ia ---
 
 # =================== LOGIN E HABILITAÇÃO DE BOTOES ===================
+
+# --- INÍCIO: verificar_credenciais ---
 def verificar_credenciais(usuario, senha):
     credenciais_dinamicas_alunos = carregar_credenciais_alunos()
     CREDENCIAIS["Alunos"].update({k.lower(): v for k, v in credenciais_dinamicas_alunos.items()})
@@ -933,7 +986,9 @@ def verificar_credenciais(usuario, senha):
         if usuario_norm == aluno_user.lower() and senha == aluno_pass:
             return "Alunos"
     return None
+# --- FIM: verificar_credenciais ---
 
+# --- INÍCIO: habilitar_botoes ---
 def habilitar_botoes(nivel):
     botoes_controle = {
         "csv": btn_selecionar,
@@ -958,7 +1013,9 @@ def habilitar_botoes(nivel):
             botoes_controle[key].config(state=tk.NORMAL, bg=BTN_ROXO_CLARO)
             
     btn_sair.config(bg=BTN_EXIT_BG, state=tk.NORMAL)
+# --- FIM: habilitar_botoes ---
 
+# --- INÍCIO: tentar_login ---
 def tentar_login(janela_login, user_entry, senha_entry):
     global nivel_acesso_atual, usuario_logado
     usuario = user_entry.get().strip().lower()
@@ -988,7 +1045,9 @@ def tentar_login(janela_login, user_entry, senha_entry):
     else:
         # Adiciona 'parent' para o messagebox ficar no topo
         messagebox.showerror("Erro de Login", "Usuário ou senha inválidos.", parent=janela_login)
+# --- FIM: tentar_login ---
 
+# --- INÍCIO: mostrar_janela_login ---
 def mostrar_janela_login():
     janela_login = tk.Toplevel(janela, bg=BG_DARK)
     janela_login.title("Login")
@@ -1024,24 +1083,26 @@ def mostrar_janela_login():
     user_entry.bind("<Return>", lambda event: senha_entry.focus_set())
     
     tk.Button(login_frame, text="Entrar", bg=BTN_ROXO_CLARO, fg="white",
-              command=lambda: tentar_login(janela_login, user_entry, senha_entry)).grid(row=2, column=0, columnspan=2, pady=5, sticky="ew")
+             command=lambda: tentar_login(janela_login, user_entry, senha_entry)).grid(row=2, column=0, columnspan=2, pady=5, sticky="ew")
     
     tk.Button(login_frame, text="Cadastrar Aluno", bg=BTN_AMARELO_CADASTRO, fg="white",
-              command=lambda: cadastrar_novo_aluno_interface(janela_login)).grid(row=3, column=0, columnspan=2, pady=5, sticky="ew")
+             command=lambda: cadastrar_novo_aluno_interface(janela_login)).grid(row=3, column=0, columnspan=2, pady=5, sticky="ew")
 
     tk.Button(login_frame, text="Cadastrar Professor", bg=BTN_AMARELO_CADASTRO, fg=BG_DARK,
-              command=lambda: iniciar_cadastro_professor(janela_login)).grid(row=4, column=0, columnspan=2, pady=5, sticky="ew")
+             command=lambda: iniciar_cadastro_professor(janela_login)).grid(row=4, column=0, columnspan=2, pady=5, sticky="ew")
 
     
     caminho_da_sua_imagem = os.path.join(BASE_PROJECT_DIR, "UNIP.jpg")
     janela.after(10, lambda: mostrar_janela_imagem_flutuante(janela_login, caminho_da_sua_imagem))
     janela_login.protocol("WM_DELETE_WINDOW", lambda: [fechar_janela_imagem_fundo(), janela.destroy()])
     user_entry.focus_set()
+# --- FIM: mostrar_janela_login ---
 
+# --- INÍCIO: cadastrar_novo_aluno_interface ---
 # --- FUNÇÃO ATUALIZADA (sem withdraw/deiconify) ---
 def cadastrar_novo_aluno_interface(janela_login=None):
     global caminho_arquivo_atual
-    caminho_dados_alunos = DEFAULT_CSV_FILE_PATH # <<< Usa o caminho completo
+    caminho_dados_alunos = DEFAULT_CSV_FILE_PATH 
     if not os.path.exists(OUTPUT_DIR): # Verifica o diretório principal
         messagebox.showwarning("Aviso", f"O diretório '{OUTPUT_DIR}' não existe. Crie-o manualmente antes de cadastrar.")
         return
@@ -1082,7 +1143,9 @@ def cadastrar_novo_aluno_interface(janela_login=None):
     if salvar_dados_no_csv(caminho_dados_alunos, nova_linha_dados):
         if salvar_credenciais_csv(login, senha):
             messagebox.showinfo("Sucesso", f"Aluno '{nome}' cadastrado com sucesso! Use '{login}' para login.", parent=parent_window)
+# --- FIM: cadastrar_novo_aluno_interface ---
 
+# --- INÍCIO: iniciar_cadastro_professor ---
 # --- FUNÇÃO ATUALIZADA (com parent=parent_window no erro) ---
 def iniciar_cadastro_professor(janela_login=None):
     admin_pass_real = CREDENCIAIS.get("Admin", {}).get("admin", "admin123") 
@@ -1096,7 +1159,9 @@ def iniciar_cadastro_professor(janela_login=None):
         messagebox.showerror("Acesso Negado", "Senha de Administrador incorreta.", parent=parent_window)
     else:
         pass # Usuário cancelou
+# --- FIM: iniciar_cadastro_professor ---
 
+# --- INÍCIO: cadastrar_novo_professor_interface ---
 # --- FUNÇÃO ATUALIZADA (sem withdraw/deiconify) ---
 def cadastrar_novo_professor_interface(janela_login=None):
     
@@ -1107,8 +1172,8 @@ def cadastrar_novo_professor_interface(janela_login=None):
     parent_window = janela_login or janela 
 
     login = simpledialog.askstring("Cadastro Professor (1/3)", 
-                                   "Digite o LOGIN do novo professor (ex: 'novoprof'):", 
-                                   parent=parent_window)
+                                  "Digite o LOGIN do novo professor (ex: 'novoprof'):", 
+                                  parent=parent_window)
     if not login: 
         return
     login = login.strip().lower()
@@ -1118,15 +1183,15 @@ def cadastrar_novo_professor_interface(janela_login=None):
         return
         
     senha = simpledialog.askstring("Cadastro Professor (2/3)", 
-                                   f"Crie uma SENHA para o login '{login}':", 
-                                   show='*', parent=parent_window)
+                                  f"Crie uma SENHA para o login '{login}':", 
+                                  show='*', parent=parent_window)
     if not senha or not senha.strip(): 
         return
     
     disciplina_display_escolhida = simpledialog.askstring("Cadastro Professor (3/3)", 
-                                        f"Qual DISCIPLINA '{login}' irá lecionar?\n\n"
-                                        f"Opções: {disciplinas_texto}", 
-                                        parent=parent_window)
+                                           f"Qual DISCIPLINA '{login}' irá lecionar?\n\n"
+                                           f"Opções: {disciplinas_texto}", 
+                                           parent=parent_window)
     if not disciplina_display_escolhida: 
         return
     
@@ -1145,10 +1210,10 @@ def cadastrar_novo_professor_interface(janela_login=None):
     if disciplina_interna == "Extra":
         nome_atual_extra = DISPLAY_NAMES.get("Extra", "Extra")
         novo_nome_display = simpledialog.askstring("Renomear Disciplina",
-                                                   f"Você selecionou a disciplina '{nome_atual_extra}'.\n"
-                                                   "Digite um novo nome para ela (ex: 'Cálculo', 'Física'):",
-                                                   initialvalue=nome_atual_extra,
-                                                   parent=parent_window)
+                                                  f"Você selecionou a disciplina '{nome_atual_extra}'.\n"
+                                                  "Digite um novo nome para ela (ex: 'Cálculo', 'Física'):",
+                                                  initialvalue=nome_atual_extra,
+                                                  parent=parent_window)
         
         if novo_nome_display and novo_nome_display.strip():
             novo_nome_display = novo_nome_display.strip()
@@ -1187,6 +1252,7 @@ def cadastrar_novo_professor_interface(janela_login=None):
             messagebox.showerror("Erro", "Credencial salva, mas houve erro ao salvar o mapeamento da disciplina.", parent=parent_window)
     else:
         messagebox.showerror("Erro", "Houve erro ao salvar as credenciais do professor.", parent=parent_window)
+# --- FIM: cadastrar_novo_professor_interface ---
 
 # =================== INTERFACE PRINCIPAL ===================
 janela = tk.Tk()
