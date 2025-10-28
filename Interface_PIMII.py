@@ -39,7 +39,6 @@ BTN_EXIT_BG = '#8B0000'
 BTN_AMARELO_CADASTRO = '#CCAA00'
 
 # =================== GLOBAIS ===================
-
 LISTA_DISCIPLINAS = ["LingEstC", "Python", "EngSoft", "APS", "Extra"] 
 DISPLAY_NAMES = {} 
 
@@ -84,9 +83,7 @@ PROFESSOR_TO_COLNAME = {
     "francisco": "APS"
 }
 
-
 # =================== UTILIDADES ===================
-
 def carregar_nomes_disciplinas():
     """Carrega os nomes de exibição das disciplinas a partir do CSV."""
     global DISPLAY_NAMES
@@ -309,9 +306,7 @@ def carregar_dados_professores():
         
     print("Dados de professores carregados e mesclados.")
 
-
 # =================== JANELA FLUTUANTE (IMAGEM) ===================
-
 def mostrar_janela_imagem_flutuante(janela_login_obj, caminho_imagem):
     """Cria e posiciona uma janela de imagem abaixo da janela de login."""
     global janela_imagem_fundo
@@ -371,7 +366,6 @@ def mostrar_janela_imagem_flutuante(janela_login_obj, caminho_imagem):
     
     janela_imagem_fundo.protocol("WM_DELETE_WINDOW", fechar_janela_imagem_fundo)
 
-
 def fechar_janela_imagem_fundo():
     """Fecha a janela flutuante ao fechar o login.""" 
     global janela_imagem_fundo
@@ -380,7 +374,6 @@ def fechar_janela_imagem_fundo():
         janela_imagem_fundo = None
 
 # =================== FUNÇÕES DE DADOS E INTERFACE ===================
-
 def selecionar_arquivo(caminho=None):
     global caminho_arquivo_atual, dados_alunos
     caminho_padrao_dados = DEFAULT_CSV_FILE_PATH # <<< USA O CAMINHO COMPLETO
@@ -559,7 +552,6 @@ def mostrar_todos_alunos():
             else:
                 print(f"Aviso: Aluno com formato inesperado encontrado: {aluno}")
 
-
     # Colunas internas
     todas_colunas_internas = ["#", "Nome", "RA", "Email"] + LISTA_DISCIPLINAS + ["Media Geral"]
     tree["columns"] = todas_colunas_internas
@@ -603,7 +595,6 @@ def mostrar_todos_alunos():
             tree.insert("", "end", values=dados_finais)
         else:
             tree.insert("", "end", values=dados_para_tree)
-
 
 def obter_indice_aluno():
     if not dados_alunos:
@@ -669,7 +660,6 @@ def mostrar_notas():
             else:
                  texto += f"{display_name}: (Erro: dado ausente)\n"
 
-
         texto += f"\n============================\n"
         media_display = DISPLAY_NAMES.get("Media Geral", "Media Geral")
         media_idx = COLUNA_MAP.get("Media Geral")
@@ -679,7 +669,6 @@ def mostrar_notas():
              texto += f"{media_display.upper()}: (Erro: dado ausente)\n"
 
     tk.Label(janela_notas, text=texto, font=("Arial", 11), justify=tk.LEFT, padx=20, pady=20).pack()
-
 
 def gerar_grafico():
     indice = obter_indice_aluno()
@@ -779,7 +768,6 @@ def gerar_grafico():
     botao_fechar_grafico = tk.Button(janela, text="Fechar Gráfico", command=fechar, bg="red", fg="white")
     botao_fechar_grafico.pack(pady=5)
 
-
 def mostrar_professores():
     janela_professores = tk.Toplevel(janela)
     janela_professores.title("Professores e Disciplinas")
@@ -799,8 +787,6 @@ def mostrar_professores():
     tk.Label(janela_professores, text=texto, font=("Arial", 12), justify=tk.LEFT, padx=20, pady=20).pack()
 
 # =================== I.A: análise disciplinar e mensagem personalizada ===================
-
-# --- FUNÇÃO ATUALIZADA (centralização da janela) ---
 def analisar_por_ia():
     """Analisa as notas do aluno logado, identifica disciplina mais fraca/forte e mostra mensagem."""
     if nivel_acesso_atual != "Alunos":
@@ -860,7 +846,6 @@ def analisar_por_ia():
     except ValueError:
         messagebox.showerror("Erro I.A", "Não foi possível identificar as disciplinas.")
         return
-
 
     # Converte para nomes de exibição
     disc_display_fraca = DISPLAY_NAMES.get(disc_interna_fraca, disc_interna_fraca)
@@ -932,7 +917,6 @@ def analisar_por_ia():
     j.winfo_children()[-1].focus_set() # Foca no último widget adicionado (botão fechar)
 
 # =================== LOGIN E HABILITAÇÃO DE BOTOES ===================
-
 def verificar_credenciais(usuario, senha):
     credenciais_dinamicas_alunos = carregar_credenciais_alunos()
     CREDENCIAIS["Alunos"].update({k.lower(): v for k, v in credenciais_dinamicas_alunos.items()})
@@ -1204,9 +1188,7 @@ def cadastrar_novo_professor_interface(janela_login=None):
     else:
         messagebox.showerror("Erro", "Houve erro ao salvar as credenciais do professor.", parent=parent_window)
 
-
 # =================== INTERFACE PRINCIPAL ===================
-
 janela = tk.Tk()
 janela.title("Sistema Acadêmico - Login Necessário")
 janela.config(bg=BG_DARK)
