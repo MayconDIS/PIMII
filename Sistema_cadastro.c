@@ -26,7 +26,8 @@
 #define MAX_DISCIPLINA 50
 #define NUM_DISCIPLINAS 5 // LingEstC, Python, EngSoft, APS, Extra
 #define MAX_LINHA_CSV 512
-#define MAX_PROFESSORES 50 // Define um limite de professores que podemos carregar em memória
+#define MAX_PROFESSORES 50
+#define MAX_ALUNOS 500 // Limite de linhas de alunos/credenciais em memória
 
 // --- ESTRUTURAS DE DADOS ---
 typedef struct {
@@ -57,8 +58,16 @@ const char* LISTA_DISCIPLINAS[NUM_DISCIPLINAS] = {
 };
 NomeDisciplina DISPLAY_NAMES[NUM_DISCIPLINAS];
 const char* ADMIN_PASSWORD = "admin123";
-ProfessorMap todos_mapeamentos[MAX_PROFESSORES]; // Array para guardar mapeamentos lidos
+ProfessorMap todos_mapeamentos[MAX_PROFESSORES];
 int num_mapeamentos_lidos = 0;
+
+// Arrays para armazenar linhas dos arquivos lidos
+char linhas_alunos[MAX_ALUNOS][MAX_LINHA_CSV];
+int num_linhas_alunos = 0;
+char linhas_creds_alunos[MAX_ALUNOS][MAX_LINHA_CSV]; // Reutilizando MAX_ALUNOS
+int num_linhas_creds_alunos = 0;
+char linhas_creds_profs[MAX_PROFESSORES][MAX_LINHA_CSV]; // Reutilizando MAX_PROFESSORES
+int num_linhas_creds_profs = 0;
 // --- FIM GLOBAIS ---
 
 // --- FUNÇÕES UTILITÁRIAS ---
@@ -93,7 +102,6 @@ int verificar_criar_diretorios() {
     return 1;
 }
 // --- FIM FUNÇÕES UTILITÁRIAS ---
-
 
 // --- FUNÇÕES DE NOMES DE DISCIPLINA ---
 void salvar_nomes_disciplinas() {
@@ -149,20 +157,58 @@ void carregar_nomes_disciplinas() {
 }
 // --- FIM FUNÇÕES NOMES DISCIPLINA ---
 
-// --- FUNÇÕES DE MAPEAMENTO DE PROFESSORES ---
+// --- FUNÇÕES DE LEITURA/ESCRITA GENÉRICAS (MODO REESCRITA) ---
+// Lê todas as linhas de um arquivo CSV para um array de strings
+int ler_linhas_arquivo(const char *caminho, char linhas[][MAX_LINHA_CSV], int max_linhas) {
+    int count = 0;
+    FILE *f = fopen(caminho, "r");
+    if (!f) {
+        // Arquivo não existe ou não pode ser lido, retorna 0 linhas
+        return 0;
+    }
+    while (fgets(linhas[count], MAX_LINHA_CSV, f) && count < max_linhas) {
+        limpar_string(linhas[count]); // Remove \n lido por fgets
+        // Opcional: Ignorar linhas completamente vazias durante a leitura
+        if (strlen(linhas[count]) > 0) {
+             count++;
+        }
+    }
+    fclose(f);
+    return count;
+}
+
+// Salva todas as linhas de um array de strings para um arquivo CSV (sobrescreve)
+int salvar_linhas_arquivo(const char *caminho, char linhas[][MAX_LINHA_CSV], int num_linhas) {
+    FILE *f = fopen(caminho, "w"); // Modo escrita (sobrescreve)
+    if (!f) {
+        printf("\n[ERRO] Nao foi possivel abrir '%s' para escrita.\n", caminho);
+        return 0; // Falha
+    }
+    for (int i = 0; i < num_linhas; i++) {
+        fprintf(f, "%s\n", linhas[i]); // Adiciona \n ao salvar cada linha
+    }
+    fclose(f);
+    return 1; // Sucesso
+}
+// --- FIM FUNÇÕES LEITURA/ESCRITA GENÉRICAS ---
+
+// --- FUNÇÕES DE MAPEAMENTO DE PROFESSORES (Usam leitura/escrita genérica agora) ---
 void ler_mapeamentos_professores() {
     num_mapeamentos_lidos = 0;
-    FILE *f = fopen(ARQ_MAP_PROFS, "r");
-    if (!f) {
-        return;
-    }
+    // Buffer temporário para ler linhas
+    char linhas_map[MAX_PROFESSORES][MAX_LINHA_CSV];
+    int total_linhas = ler_linhas_arquivo(ARQ_MAP_PROFS, linhas_map, MAX_PROFESSORES);
 
-    char linha[MAX_LINHA_CSV];
-    fgets(linha, sizeof(linha), f); // Pula cabeçalho
+    // Ignora cabeçalho (linha 0) se existir
+    int inicio = (total_linhas > 0 && strstr(linhas_map[0], "Login") != NULL) ? 1 : 0;
 
-    while (fgets(linha, sizeof(linha), f) && num_mapeamentos_lidos < MAX_PROFESSORES) {
-        limpar_string(linha);
-        char *login_csv = strtok(linha, ",");
+    for(int i = inicio; i < total_linhas && num_mapeamentos_lidos < MAX_PROFESSORES; i++) {
+         // Faz uma cópia da linha para strtok não modificar o original no array
+        char linha_copia[MAX_LINHA_CSV];
+        strncpy(linha_copia, linhas_map[i], MAX_LINHA_CSV -1);
+        linha_copia[MAX_LINHA_CSV-1] = '\0';
+
+        char *login_csv = strtok(linha_copia, ",");
         char *disciplina_csv = strtok(NULL, ",");
 
         if (login_csv && disciplina_csv) {
@@ -173,29 +219,33 @@ void ler_mapeamentos_professores() {
             num_mapeamentos_lidos++;
         }
     }
-    fclose(f);
-    printf("Lidos %d mapeamentos de professores de '%s'.\n", num_mapeamentos_lidos, ARQ_MAP_PROFS);
+    printf("Carregados %d mapeamentos de professores de '%s'.\n", num_mapeamentos_lidos, ARQ_MAP_PROFS);
 }
 
 void salvar_todos_mapeamentos_professores() {
     _mkdir(CONFIDENTIAL_DIR);
-    FILE *f = fopen(ARQ_MAP_PROFS, "w"); // Abre em modo escrita (w) para sobrescrever
-    if (!f) {
-        printf("\n[ERRO] Nao foi possivel abrir '%s' para salvar mapeamentos.\n", ARQ_MAP_PROFS);
-        return;
+    // Buffer temporário para formatar linhas
+    char linhas_map_salvar[MAX_PROFESSORES + 1][MAX_LINHA_CSV]; // +1 para cabeçalho
+    int total_linhas_salvar = 0;
+
+    // Adiciona cabeçalho
+    snprintf(linhas_map_salvar[total_linhas_salvar], MAX_LINHA_CSV, "Login,Disciplina");
+    total_linhas_salvar++;
+
+    // Adiciona dados
+    for (int i = 0; i < num_mapeamentos_lidos && total_linhas_salvar <= MAX_PROFESSORES; i++) {
+        snprintf(linhas_map_salvar[total_linhas_salvar], MAX_LINHA_CSV, "%s,%s",
+                 todos_mapeamentos[i].login, todos_mapeamentos[i].disciplina_interna);
+        total_linhas_salvar++;
     }
 
-    fprintf(f, "Login,Disciplina\n"); // Escreve o cabeçalho
-    for (int i = 0; i < num_mapeamentos_lidos; i++) {
-        fprintf(f, "%s,%s\n", todos_mapeamentos[i].login, todos_mapeamentos[i].disciplina_interna);
+    if(salvar_linhas_arquivo(ARQ_MAP_PROFS, linhas_map_salvar, total_linhas_salvar)){
+         printf("[SUCESSO] Mapeamentos de professores salvos em '%s'.\n", ARQ_MAP_PROFS);
     }
-    fclose(f);
-    printf("[SUCESSO] Mapeamentos de professores salvos em '%s'.\n", ARQ_MAP_PROFS);
 }
 // --- FIM FUNÇÕES DE MAPEAMENTO ---
 
-
-// --- FUNÇÕES DE CADASTRO ---
+// --- FUNÇÕES DE CADASTRO ATUALIZADA (lógica Ler/Adicionar/Reescrever) ---
 void cadastrar_aluno() {
     AlunoInfo aluno_info;
     Credencial aluno_cred;
@@ -203,7 +253,6 @@ void cadastrar_aluno() {
     printf("\n=== Cadastro de Novo Aluno ===\n");
 
     printf("Nome Completo: ");
-    // Não limpa buffer aqui, foi limpo no main
     if (fgets(aluno_info.nome, sizeof(aluno_info.nome), stdin) == NULL) return;
     limpar_string(aluno_info.nome);
     if (strlen(aluno_info.nome) == 0) { printf("Nome vazio. Cancelado.\n"); return; }
@@ -224,7 +273,6 @@ void cadastrar_aluno() {
     }
     printf("Login gerado: %s\n", aluno_cred.login);
 
-
     printf("Senha para o login '%s': ", aluno_cred.login);
     if (fgets(aluno_cred.senha, sizeof(aluno_cred.senha), stdin) == NULL) return;
     limpar_string(aluno_cred.senha);
@@ -238,71 +286,104 @@ void cadastrar_aluno() {
         printf("Email definido como: %s\n", aluno_info.email);
     }
 
+    // --- Salvar credenciais (Ler/Adicionar/Reescrever) ---
     _mkdir(CONFIDENTIAL_DIR);
-    FILE *arq_creds = fopen(ARQ_CREDS_ALUNOS, "a");
-    if (!arq_creds) {
-        printf("\n[ERRO] Nao foi possivel abrir '%s'.\n", ARQ_CREDS_ALUNOS);
+    num_linhas_creds_alunos = ler_linhas_arquivo(ARQ_CREDS_ALUNOS, linhas_creds_alunos, MAX_ALUNOS);
+
+    if (num_linhas_creds_alunos < MAX_ALUNOS) {
+        // Formata a nova linha
+        snprintf(linhas_creds_alunos[num_linhas_creds_alunos], MAX_LINHA_CSV, "%s,%s",
+                 aluno_cred.login, aluno_cred.senha);
+        num_linhas_creds_alunos++; // Incrementa o contador
+
+        // Garante cabeçalho se for a primeira linha (ou se não foi lido)
+        if (num_linhas_creds_alunos == 1 || strstr(linhas_creds_alunos[0], "Login") == NULL) {
+             // Move a linha adicionada para o índice 1 e insere cabeçalho no 0
+            if (num_linhas_creds_alunos == 1) { // Só tinha 1 linha (a nova)
+                 strncpy(linhas_creds_alunos[1], linhas_creds_alunos[0], MAX_LINHA_CSV);
+            } else { // Se leu algo antes mas não tinha cabeçalho, shift + insert (raro)
+                for(int i = num_linhas_creds_alunos -1; i > 0; i--) {
+                     strncpy(linhas_creds_alunos[i], linhas_creds_alunos[i-1], MAX_LINHA_CSV);
+                }
+            }
+             snprintf(linhas_creds_alunos[0], MAX_LINHA_CSV, "Login,Senha");
+             num_linhas_creds_alunos = (num_linhas_creds_alunos == 1) ? 2 : num_linhas_creds_alunos; // Ajusta contagem se inseriu cabeçalho
+        }
+
+        // Reescreve o arquivo
+        if (salvar_linhas_arquivo(ARQ_CREDS_ALUNOS, linhas_creds_alunos, num_linhas_creds_alunos)) {
+            printf("[SUCESSO] Credenciais salvas em '%s'.\n", ARQ_CREDS_ALUNOS);
+        }
     } else {
-        fseek(arq_creds, 0, SEEK_END);
-        if (ftell(arq_creds) == 0) { fprintf(arq_creds, "Login,Senha\n"); }
-        fprintf(arq_creds, "%s,%s\n", aluno_cred.login, aluno_cred.senha);
-        fclose(arq_creds);
-        printf("[SUCESSO] Credenciais salvas em '%s'.\n", ARQ_CREDS_ALUNOS);
+        printf("[ERRO] Limite maximo de alunos (%d) atingido no arquivo de credenciais.\n", MAX_ALUNOS);
     }
 
-     _mkdir(OUTPUT_DIR);
-    FILE *arq_alunos = fopen(ARQ_ALUNOS, "a");
-    if (!arq_alunos) {
-        printf("\n[ERRO] Nao foi possivel abrir '%s'.\n", ARQ_ALUNOS);
-        return;
-    }
-    fseek(arq_alunos, 0, SEEK_END);
-    int adicionar_nova_linha_antes = 0;
-    if (ftell(arq_alunos) > 0) {
-        fseek(arq_alunos, -1, SEEK_END);
-        if (fgetc(arq_alunos) != '\n') {
-            adicionar_nova_linha_antes = 1;
-        }
-        fseek(arq_alunos, 0, SEEK_END);
-    }
+    // --- Salvar dados academicos (Ler/Adicionar/Reescrever) ---
+    _mkdir(OUTPUT_DIR);
+    num_linhas_alunos = ler_linhas_arquivo(ARQ_ALUNOS, linhas_alunos, MAX_ALUNOS);
 
-    if (ftell(arq_alunos) == 0) {
-        fprintf(arq_alunos, "Nome,RA,Email");
+    if (num_linhas_alunos < MAX_ALUNOS) {
+         // Formata a nova linha de dados
+        char nova_linha_aluno[MAX_LINHA_CSV];
+        char buffer_notas[MAX_LINHA_CSV] = ""; // Buffer para concatenar notas
         for (int i = 0; i < NUM_DISCIPLINAS; i++) {
-            fprintf(arq_alunos, ",%s", LISTA_DISCIPLINAS[i]);
+             strcat(buffer_notas, ",0.00");
         }
-        fprintf(arq_alunos, ",Media Geral\n");
-    } else if (adicionar_nova_linha_antes) {
-        fprintf(arq_alunos, "\n");
-    }
+        strcat(buffer_notas, ",0.00"); // Media Geral
 
-    fprintf(arq_alunos, "%s,%s,%s", aluno_info.nome, aluno_info.ra, aluno_info.email);
-    for (int i = 0; i < NUM_DISCIPLINAS; i++) {
-        fprintf(arq_alunos, ",%.2f", 0.00);
+        snprintf(nova_linha_aluno, MAX_LINHA_CSV, "%s,%s,%s%s",
+                 aluno_info.nome, aluno_info.ra, aluno_info.email, buffer_notas);
+
+        // Adiciona a nova linha ao array
+        strncpy(linhas_alunos[num_linhas_alunos], nova_linha_aluno, MAX_LINHA_CSV - 1);
+        linhas_alunos[num_linhas_alunos][MAX_LINHA_CSV-1] = '\0';
+        num_linhas_alunos++;
+
+        // Garante cabeçalho
+         if (num_linhas_alunos == 1 || strstr(linhas_alunos[0], "Nome,RA,Email") == NULL) {
+             if (num_linhas_alunos == 1) {
+                 strncpy(linhas_alunos[1], linhas_alunos[0], MAX_LINHA_CSV);
+             } else {
+                 for(int i = num_linhas_alunos -1; i > 0; i--) {
+                     strncpy(linhas_alunos[i], linhas_alunos[i-1], MAX_LINHA_CSV);
+                 }
+             }
+             // Cria cabeçalho dinâmico
+             char cabecalho[MAX_LINHA_CSV] = "Nome,RA,Email";
+             for (int i = 0; i < NUM_DISCIPLINAS; i++) {
+                 strcat(cabecalho, ",");
+                 strcat(cabecalho, LISTA_DISCIPLINAS[i]);
+             }
+             strcat(cabecalho, ",Media Geral");
+             snprintf(linhas_alunos[0], MAX_LINHA_CSV, "%s", cabecalho);
+             num_linhas_alunos = (num_linhas_alunos == 1) ? 2 : num_linhas_alunos;
+         }
+
+        // Reescreve o arquivo
+        if (salvar_linhas_arquivo(ARQ_ALUNOS, linhas_alunos, num_linhas_alunos)) {
+            printf("[SUCESSO] Dados academicos salvos em '%s'.\n", ARQ_ALUNOS);
+        }
+    } else {
+         printf("[ERRO] Limite maximo de alunos (%d) atingido no arquivo de dados.\n", MAX_ALUNOS);
     }
-    fprintf(arq_alunos, ",%.2f\n", 0.00);
-    fclose(arq_alunos);
-    printf("[SUCESSO] Dados academicos salvos em '%s'.\n", ARQ_ALUNOS);
 }
 
-// --- FUNÇÃO CORRIGIDA (removido limpar_buffer no início) ---
+// --- FUNÇÃO ATUALIZADA (usa lógica Ler/Adicionar/Reescrever para credenciais) ---
 void cadastrar_professor() {
     Credencial prof_cred;
-    ProfessorMap novo_map; // Guarda o mapeamento sendo criado
+    ProfessorMap novo_map;
     int disciplina_idx = -1;
     char disciplina_display_escolhida[MAX_DISCIPLINA];
-    int mapeamento_existente_idx = -1; // Índice do mapeamento a ser atualizado
-    int substituir_disciplina = 0; // Flag para perguntar sobre substituição
+    int mapeamento_existente_idx = -1;
+    int substituir_disciplina = 0;
 
     printf("\n=== Cadastro de Novo Professor ===\n");
 
     printf("Login do Professor: ");
-    // limpar_buffer(); // <<<--- LINHA REMOVIDA ---<<<
     if (fgets(prof_cred.login, sizeof(prof_cred.login), stdin) == NULL) return;
     limpar_string(prof_cred.login);
     str_tolower(prof_cred.login);
     if (strlen(prof_cred.login) == 0) { printf("Login vazio. Cancelado.\n"); return; }
-    // TODO: Verificar se login já existe em credenciais de alunos/admin
 
     printf("Senha para o login '%s': ", prof_cred.login);
     if (fgets(prof_cred.senha, sizeof(prof_cred.senha), stdin) == NULL) return;
@@ -315,12 +396,12 @@ void cadastrar_professor() {
     }
     printf("Escolha o numero da disciplina: ");
     int escolha_num;
-    if (scanf("%d", &escolha_num) != 1) { // Lê o número
+    if (scanf("%d", &escolha_num) != 1) {
         printf("Entrada invalida. Cancelado.\n");
-        limpar_buffer(); // Limpa buffer SE scanf falhar
+        limpar_buffer();
         return;
     }
-    limpar_buffer(); // Limpa após scanf bem-sucedido
+    limpar_buffer(); // Limpa após scanf
 
     if (escolha_num < 1 || escolha_num > NUM_DISCIPLINAS) {
          printf("Escolha invalida. Cancelado.\n");
@@ -328,7 +409,6 @@ void cadastrar_professor() {
     }
     disciplina_idx = escolha_num - 1;
 
-    // Guarda informações do novo mapeamento
     strncpy(novo_map.login, prof_cred.login, MAX_LOGIN -1);
     novo_map.login[MAX_LOGIN-1] = '\0';
     strncpy(novo_map.disciplina_interna, DISPLAY_NAMES[disciplina_idx].interno, MAX_DISCIPLINA -1);
@@ -336,8 +416,6 @@ void cadastrar_professor() {
     strncpy(disciplina_display_escolhida, DISPLAY_NAMES[disciplina_idx].display, MAX_DISCIPLINA -1);
     disciplina_display_escolhida[MAX_DISCIPLINA-1] = '\0';
 
-
-    // --- Renomear "Extra" ---
     if (strcmp(novo_map.disciplina_interna, "Extra") == 0) {
         printf("Voce escolheu a disciplina '%s'.\n", disciplina_display_escolhida);
         printf("Digite um novo nome para ela (ou deixe em branco para manter): ");
@@ -354,14 +432,12 @@ void cadastrar_professor() {
             }
         }
     }
-    // --- Fim Renomear ---
 
-    // --- Lógica de Substituição de Mapeamento ---
-    ler_mapeamentos_professores(); // Carrega mapeamentos atuais
+    ler_mapeamentos_professores(); // Mapeamentos já usam ler/reescrever
 
     for(int i = 0; i < num_mapeamentos_lidos; i++) {
-        // Verifica se a DISCIPLINA já está mapeada para OUTRO professor
-        if (strcmp(todos_mapeamentos[i].disciplina_interna, novo_map.disciplina_interna) == 0 &&
+        // ... (lógica de verificação de substituição - mantenha como antes) ...
+         if (strcmp(todos_mapeamentos[i].disciplina_interna, novo_map.disciplina_interna) == 0 &&
             strcmp(todos_mapeamentos[i].login, novo_map.login) != 0)
         {
             printf("AVISO: A disciplina '%s' ja eh lecionada por '%s'.\n",
@@ -372,59 +448,46 @@ void cadastrar_professor() {
             if (fgets(resp, sizeof(resp), stdin) != NULL) {
                 limpar_string(resp);
                 if (tolower(resp[0]) == 's') {
-                    mapeamento_existente_idx = i; // Marca para atualizar este índice
+                    mapeamento_existente_idx = i;
                     substituir_disciplina = 1;
-                    break; // Encontrou a disciplina, pode parar
+                    break;
                 } else {
-                    printf("Cadastro cancelado.\n");
-                    return; // Cancela se não quiser substituir
+                    printf("Cadastro cancelado.\n"); return;
                 }
-            } else { return; } // Erro de leitura
+            } else { return; }
         }
-        // Verifica se o PROFESSOR já está mapeado para OUTRA disciplina
         else if (strcmp(todos_mapeamentos[i].login, novo_map.login) == 0 &&
                  strcmp(todos_mapeamentos[i].disciplina_interna, novo_map.disciplina_interna) != 0)
         {
-             // Encontrou o mesmo professor, atualiza a disciplina dele
              mapeamento_existente_idx = i;
-             substituir_disciplina = 0; // Indica que não é substituição de outro prof
+             substituir_disciplina = 0;
              break;
         }
-        // Verifica se o mapeamento exato já existe
         else if (strcmp(todos_mapeamentos[i].login, novo_map.login) == 0 &&
                  strcmp(todos_mapeamentos[i].disciplina_interna, novo_map.disciplina_interna) == 0)
         {
-             printf("Este professor ja esta cadastrado para esta disciplina.\n");
-             return; // Não faz nada
+             printf("Este professor ja esta cadastrado para esta disciplina.\n"); return;
         }
     }
 
-    // Atualiza ou adiciona o mapeamento
     if (mapeamento_existente_idx != -1) {
-        // Guarda o login antigo antes de sobrescrever, para a mensagem de substituição
-        char login_antigo[MAX_LOGIN];
+        // ... (lógica de atualização do array todos_mapeamentos - mantenha como antes) ...
+         char login_antigo[MAX_LOGIN];
         if (substituir_disciplina) {
              strncpy(login_antigo, todos_mapeamentos[mapeamento_existente_idx].login, MAX_LOGIN -1);
              login_antigo[MAX_LOGIN - 1] = '\0';
         }
-
-        // Atualiza o mapeamento existente
         strncpy(todos_mapeamentos[mapeamento_existente_idx].login, novo_map.login, MAX_LOGIN -1);
         strncpy(todos_mapeamentos[mapeamento_existente_idx].disciplina_interna, novo_map.disciplina_interna, MAX_DISCIPLINA -1);
          todos_mapeamentos[mapeamento_existente_idx].login[MAX_LOGIN - 1] = '\0';
          todos_mapeamentos[mapeamento_existente_idx].disciplina_interna[MAX_DISCIPLINA - 1] = '\0';
-
          if(substituir_disciplina) {
-             printf("Professor '%s' substituido por '%s' para a disciplina '%s'.\n",
-                    login_antigo, // Usa o login antigo guardado
-                    novo_map.login, disciplina_display_escolhida);
+             printf("Professor '%s' substituido por '%s' para a disciplina '%s'.\n", login_antigo, novo_map.login, disciplina_display_escolhida);
          } else {
-             printf("Disciplina do professor '%s' atualizada para '%s'.\n",
-                    novo_map.login, disciplina_display_escolhida);
+             printf("Disciplina do professor '%s' atualizada para '%s'.\n", novo_map.login, disciplina_display_escolhida);
          }
 
     } else if (num_mapeamentos_lidos < MAX_PROFESSORES) {
-        // Adiciona novo mapeamento
         todos_mapeamentos[num_mapeamentos_lidos] = novo_map;
         num_mapeamentos_lidos++;
         printf("Novo mapeamento adicionado: Professor '%s' para disciplina '%s'.\n", novo_map.login, disciplina_display_escolhida);
@@ -432,25 +495,38 @@ void cadastrar_professor() {
         printf("[ERRO] Limite maximo de professores (%d) atingido. Nao foi possivel adicionar.\n", MAX_PROFESSORES);
         return;
     }
+    salvar_todos_mapeamentos_professores(); // Salva mapeamentos (sobrescreve)
 
-    // Salva TODOS os mapeamentos (sobrescrevendo o arquivo)
-    salvar_todos_mapeamentos_professores();
-    // --- Fim da Lógica de Substituição ---
-
-
-    // --- Salvar credenciais do professor ---
+    // --- Salvar credenciais do professor (Ler/Adicionar/Reescrever) ---
     _mkdir(CONFIDENTIAL_DIR);
-    FILE *arq_creds_prof = fopen(ARQ_CREDS_PROFS, "a");
-    if (!arq_creds_prof) {
-        printf("\n[ERRO] Nao foi possivel abrir '%s'.\n", ARQ_CREDS_PROFS);
-    } else {
-        fseek(arq_creds_prof, 0, SEEK_END);
-        if (ftell(arq_creds_prof) == 0) { fprintf(arq_creds_prof, "Login,Senha\n"); }
-        fprintf(arq_creds_prof, "%s,%s\n", prof_cred.login, prof_cred.senha);
-        fclose(arq_creds_prof);
-        printf("[SUCESSO] Credenciais do professor salvas em '%s'.\n", ARQ_CREDS_PROFS);
-    }
+    num_linhas_creds_profs = ler_linhas_arquivo(ARQ_CREDS_PROFS, linhas_creds_profs, MAX_PROFESSORES);
 
+     if (num_linhas_creds_profs < MAX_PROFESSORES) {
+        // Formata a nova linha
+        snprintf(linhas_creds_profs[num_linhas_creds_profs], MAX_LINHA_CSV, "%s,%s",
+                 prof_cred.login, prof_cred.senha);
+        num_linhas_creds_profs++;
+
+        // Garante cabeçalho
+        if (num_linhas_creds_profs == 1 || strstr(linhas_creds_profs[0], "Login") == NULL) {
+            if (num_linhas_creds_profs == 1) {
+                 strncpy(linhas_creds_profs[1], linhas_creds_profs[0], MAX_LINHA_CSV);
+            } else {
+                for(int i = num_linhas_creds_profs -1; i > 0; i--) {
+                     strncpy(linhas_creds_profs[i], linhas_creds_profs[i-1], MAX_LINHA_CSV);
+                }
+            }
+             snprintf(linhas_creds_profs[0], MAX_LINHA_CSV, "Login,Senha");
+             num_linhas_creds_profs = (num_linhas_creds_profs == 1) ? 2 : num_linhas_creds_profs;
+        }
+
+        // Reescreve o arquivo
+        if (salvar_linhas_arquivo(ARQ_CREDS_PROFS, linhas_creds_profs, num_linhas_creds_profs)) {
+            printf("[SUCESSO] Credenciais do professor salvas em '%s'.\n", ARQ_CREDS_PROFS);
+        }
+    } else {
+        printf("[ERRO] Limite maximo de professores (%d) atingido no arquivo de credenciais.\n", MAX_PROFESSORES);
+    }
 }
 // --- FIM FUNÇÕES CADASTRO ---
 
@@ -461,9 +537,7 @@ int main() {
         getchar();
         return 1;
     }
-
     carregar_nomes_disciplinas();
-
 
     int escolha;
     do {
@@ -488,11 +562,9 @@ int main() {
             case 2:
                 printf("Digite a senha de administrador: ");
                 char senha_admin_digitada[MAX_SENHA];
-                // Não precisa limpar buffer aqui, já limpo após scanf da escolha
                 if (fgets(senha_admin_digitada, sizeof(senha_admin_digitada), stdin) != NULL) {
                     limpar_string(senha_admin_digitada);
                     if (strcmp(senha_admin_digitada, ADMIN_PASSWORD) == 0) {
-                        // Opcional: limpar_buffer();
                         cadastrar_professor();
                     } else {
                         printf("Senha de administrador incorreta.\n");
