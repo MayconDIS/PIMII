@@ -79,9 +79,7 @@ tree = None
 scrollbar = None
 # --- Fim Variáveis Globais ---
 
-
 # =================== UTILIDADES ===================
-
 # --- INÍCIO: carregar_nomes_disciplinas ---
 def carregar_nomes_disciplinas():
     """Carrega os nomes de exibição das disciplinas a partir do CSV."""
@@ -156,38 +154,95 @@ def carregar_credenciais_alunos():
     return novas_creds
 # --- FIM: carregar_credenciais_alunos ---
 
-# --- INÍCIO: salvar_credenciais_csv ---
+# --- INÍCIO: salvar_credenciais_csv (ATUALIZADO) ---
 def salvar_credenciais_csv(login, senha):
-    os.makedirs(CONFIDENTIAL_DATA_DIR, exist_ok=True)
-    try:
-        adicionar_cabecalho = not os.path.exists(ARQUIVO_CREDENCIAIS) or os.path.getsize(ARQUIVO_CREDENCIAIS) == 0
-        with open(ARQUIVO_CREDENCIAIS, "a", newline='', encoding='utf-8') as arq_creds:
-            writer = csv.writer(arq_creds)
-            if adicionar_cabecalho:
-                writer.writerow(["Login", "Senha"])
-            writer.writerow([login, senha])
-        return True
-    except Exception as e:
-        messagebox.showwarning("Aviso", f"Houve erro ao salvar as credenciais: {e}")
-        return False
+    """Lê, adiciona e reescreve o CSV de credenciais de alunos."""
+    os.makedirs(CONFIDENTIAL_DATA_DIR, exist_ok=True) 
+    cabecalho = ["Login", "Senha"]
+    
+    linhas = ler_linhas_csv(ARQUIVO_CREDENCIAIS)
+    if linhas is None: return False # Erro na leitura
+    
+    # Adiciona a nova linha de dados
+    linhas.append([login, senha])
+    
+    # Salva o arquivo inteiro
+    return salvar_linhas_csv(ARQUIVO_CREDENCIAIS, linhas, cabecalho)
 # --- FIM: salvar_credenciais_csv ---
 
-# --- INÍCIO: salvar_dados_no_csv ---
-def salvar_dados_no_csv(caminho, dados_novos, modo='a'):
-    os.makedirs(CONFIDENTIAL_DATA_DIR, exist_ok=True)
+# --- INÍCIO: salvar_dados_no_csv (ATUALIZADO) ---
+def salvar_dados_no_csv(caminho, dados_novos, modo='a'): # 'modo' não é mais usado
+    """Lê, adiciona e reescreve o CSV de dados de alunos."""
+    os.makedirs(CONFIDENTIAL_DATA_DIR, exist_ok=True) 
     cabecalho = ["Nome","RA","Email"] + LISTA_DISCIPLINAS + ["Media Geral"]
-    try:
-        adicionar_cabecalho = not os.path.exists(caminho) or os.path.getsize(caminho) == 0
-        with open(caminho, mode=modo, newline='', encoding='utf-8') as file:
-            writer = csv.writer(file)
-            if adicionar_cabecalho:
-                writer.writerow(cabecalho)
-            writer.writerow(dados_novos)
-        return True
-    except Exception as e:
-        messagebox.showerror("Erro de Salvamento", f"Não foi possível salvar o arquivo: {e}")
-        return False
+    
+    linhas = ler_linhas_csv(caminho)
+    if linhas is None: return False # Erro na leitura
+    
+    # Adiciona a nova linha de dados
+    linhas.append(dados_novos)
+    
+    # Salva o arquivo inteiro
+    return salvar_linhas_csv(caminho, linhas, cabecalho)
 # --- FIM: salvar_dados_no_csv ---
+
+# ... (pule _recalcular_media_geral e as funções de carregar) ...
+
+# --- INÍCIO: salvar_credenciais_professor_csv (ATUALIZADO) ---
+def salvar_credenciais_professor_csv(login, senha):
+    """Lê, adiciona e reescreve o CSV de credenciais de professores."""
+    os.makedirs(CONFIDENTIAL_DATA_DIR, exist_ok=True) 
+    cabecalho = ["Login", "Senha"]
+    
+    linhas = ler_linhas_csv(ARQUIVO_CREDENCIAIS_PROFESSORES)
+    if linhas is None: return False # Erro na leitura
+    
+    # Adiciona a nova linha de dados
+    linhas.append([login, senha])
+    
+    # Salva o arquivo inteiro
+    return salvar_linhas_csv(ARQUIVO_CREDENCIAIS_PROFESSORES, linhas, cabecalho)
+# --- FIM: salvar_credenciais_professor_csv ---
+
+# --- INÍCIO: salvar_mapeamento_professor_csv (ATUALIZADO) ---
+def salvar_mapeamento_professor_csv(login, disciplina_interna):
+    """Lê o arquivo de mapeamento, atualiza-o e o reescreve."""
+    os.makedirs(CONFIDENTIAL_DATA_DIR, exist_ok=True)
+    cabecalho = ["Login", "Disciplina"]
+    
+    linhas = ler_linhas_csv(ARQUIVO_MAPEAMENTO_PROFESSORES)
+    if linhas is None: return False # Erro na leitura
+    
+    # Converte linhas lidas para um dicionário para fácil manipulação
+    mapeamentos = {}
+    # Pula o cabeçalho se ele existir e for correto
+    if linhas and linhas[0] == cabecalho:
+        for row in linhas[1:]:
+            if len(row) >= 2:
+                mapeamentos[row[0].strip().lower()] = row[1].strip()
+    else: # Sem cabeçalho ou cabeçalho incorreto
+         for row in linhas:
+             if len(row) >= 2:
+                 # Assume que qualquer linha pode ser dado se não houver cabeçalho
+                 if row[0].lower() != "login": 
+                     mapeamentos[row[0].strip().lower()] = row[1].strip()
+
+    # Atualiza o dicionário com a nova lógica
+    mapeamentos[login] = disciplina_interna
+    for prof_login, disc in list(mapeamentos.items()):
+        if disc == disciplina_interna and prof_login != login:
+            del mapeamentos[prof_login]
+        if prof_login == login and disc != disciplina_interna:
+             del mapeamentos[prof_login]
+
+    # Converte o dicionário de volta para lista de linhas
+    linhas_para_salvar = []
+    for prof_login, disc in mapeamentos.items():
+        linhas_para_salvar.append([prof_login, disc])
+        
+    # Salva o arquivo inteiro (sobrescrevendo)
+    return salvar_linhas_csv(ARQUIVO_MAPEAMENTO_PROFESSORES, linhas_para_salvar, cabecalho)
+# --- FIM: salvar_mapeamento_professor_csv ---
 
 # --- INÍCIO: _recalcular_media_geral ---
 def _recalcular_media_geral(aluno):
@@ -361,9 +416,58 @@ def carregar_dados_professores():
     print("Dados de professores carregados e mesclados.")
 # --- FIM: carregar_dados_professores ---
 
+# --- INÍCIO: Novas Funções Auxiliares de Leitura/Escrita ---
+def ler_linhas_csv(caminho_arquivo):
+    """Lê todas as linhas de um CSV, ignorando linhas totalmente vazias."""
+    if not os.path.exists(caminho_arquivo):
+        return [] # Retorna lista vazia se o arquivo não existe
+    
+    linhas = []
+    encoding_usada = 'utf-8' # Tenta utf-8 primeiro
+    try:
+        with open(caminho_arquivo, 'r', newline='', encoding='utf-8') as f:
+            reader = csv.reader(f)
+            for row in reader:
+                if row: # Adiciona apenas se a linha não for [ ]
+                    linhas.append(row)
+    except UnicodeDecodeError:
+        try:
+            # Tenta latin-1 como fallback
+            encoding_usada = 'latin-1'
+            with open(caminho_arquivo, 'r', newline='', encoding='latin-1') as f:
+                reader = csv.reader(f)
+                for row in reader:
+                    if row: 
+                        linhas.append(row)
+        except Exception as e:
+            messagebox.showerror("Erro de Leitura", f"Não foi possível ler {os.path.basename(caminho_arquivo)} com {encoding_usada}: {e}")
+            return None # Indica erro
+    except Exception as e:
+         messagebox.showerror("Erro de Leitura", f"Não foi possível ler {os.path.basename(caminho_arquivo)}: {e}")
+         return None # Indica erro
+         
+    return linhas
+
+def salvar_linhas_csv(caminho_arquivo, linhas, cabecalho_esperado):
+    """Salva uma lista de linhas em um arquivo CSV, sobrescrevendo (modo 'w')."""
+    try:
+        # Garante que o cabeçalho esteja presente e correto
+        if not linhas or linhas[0] != cabecalho_esperado:
+            # Remove cabeçalho antigo/incorreto se houver
+            if linhas and len(linhas[0]) == len(cabecalho_esperado):
+                linhas.pop(0)
+            linhas.insert(0, cabecalho_esperado)
+            
+        with open(caminho_arquivo, 'w', newline='', encoding='utf-8') as f:
+            writer = csv.writer(f)
+            writer.writerows(linhas)
+        return True
+    except Exception as e:
+        messagebox.showerror("Erro de Salvamento", f"Não foi possível salvar em {os.path.basename(caminho_arquivo)}: {e}")
+        return False
+# --- FIM: Novas Funções Auxiliares ---
 
 # =================== JANELA FLUTUANTE (IMAGEM) ===================
-
 # --- INÍCIO: mostrar_janela_imagem_flutuante ---
 def mostrar_janela_imagem_flutuante(janela_pai, caminho_imagem):
     """Cria e posiciona uma janela de imagem abaixo da janela de login."""
@@ -434,9 +538,7 @@ def fechar_janela_imagem_fundo(*args):
         janela_imagem_fundo = None
 # --- FIM: fechar_janela_imagem_fundo ---
 
-
 # =================== FUNÇÕES DE DADOS E INTERFACE ===================
-
 # --- INÍCIO: selecionar_arquivo ---
 def selecionar_arquivo(caminho=None):
     global caminho_arquivo_atual, dados_alunos
@@ -634,7 +736,8 @@ def lancar_nota():
 
 # --- INÍCIO: mostrar_todos_alunos ---
 def mostrar_todos_alunos():
-    if tree is None: return
+    # Verifica se o widget tree existe antes de usá-lo
+    if 'tree' not in globals() or tree is None: return 
     for item in tree.get_children():
         tree.delete(item)
 
@@ -650,7 +753,14 @@ def mostrar_todos_alunos():
             else:
                 print(f"Aviso: Aluno com formato inesperado encontrado: {aluno}")
 
+    # --- MUDANÇA: Determina colunas visíveis ---
+    # Começa com todas as colunas
     todas_colunas_internas = ["#", "Nome", "RA", "Email"] + LISTA_DISCIPLINAS + ["Media Geral"]
+    # Se "Extra" não tem professor, remove da lista de colunas da tree
+    if "Extra" not in PROFESSORES_POR_DISCIPLINA:
+        todas_colunas_internas.remove("Extra")
+    # --- FIM DA MUDANÇA ---
+        
     tree["columns"] = todas_colunas_internas
     tree["show"] = "headings"
 
@@ -662,6 +772,7 @@ def mostrar_todos_alunos():
 
     colunas_notas = set(LISTA_DISCIPLINAS + ["Media Geral"])
 
+    # Loop agora usa a lista filtrada
     for col_interna in todas_colunas_internas:
         display_text = DISPLAY_NAMES.get(col_interna, col_interna)
         tree.heading(col_interna, text=display_text)
@@ -671,24 +782,68 @@ def mostrar_todos_alunos():
     colunas_ocultas_indices = []
     if nivel_acesso_atual == "Professores":
         disciplina_interna = PROFESSOR_TO_COLNAME.get(usuario_logado, "")
-        for disc_interna in LISTA_DISCIPLINAS:
+        # Usa LISTA_DISCIPLINAS aqui para saber quais colunas de dados existem
+        for disc_interna in LISTA_DISCIPLINAS: 
             if disc_interna != disciplina_interna:
                 colunas_ocultas_indices.append(COLUNA_MAP.get(disc_interna, None))
         colunas_ocultas_indices.append(COLUNA_MAP["Media Geral"])
 
     for i, linha in enumerate(alunos_a_exibir):
         dados_para_tree = [i + 1]
-        dados_para_tree.extend(linha)
+        
+        # --- MUDANÇA: Filtra os dados da linha para corresponder às colunas visíveis ---
+        dados_aluno_filtrados = []
+        # Adiciona Nome, RA, Email
+        dados_aluno_filtrados.extend(linha[0:3]) 
+        # Adiciona notas das disciplinas visíveis
+        for disc_interna in LISTA_DISCIPLINAS:
+            if disc_interna == "Extra" and "Extra" not in PROFESSORES_POR_DISCIPLINA:
+                continue # Pula a coluna "Extra"
+            col_idx = COLUNA_MAP.get(disc_interna)
+            if col_idx is not None and col_idx < len(linha):
+                dados_aluno_filtrados.append(linha[col_idx])
+            else:
+                dados_aluno_filtrados.append("N/A")
+        # Adiciona Média Geral
+        media_idx = COLUNA_MAP.get("Media Geral")
+        if media_idx is not None and media_idx < len(linha):
+             dados_aluno_filtrados.append(linha[media_idx])
+        else:
+             dados_aluno_filtrados.append("N/A")
+             
+        dados_para_tree.extend(dados_aluno_filtrados)
+        # --- FIM DA MUDANÇA ---
+
         if nivel_acesso_atual == "Professores":
             dados_finais = list(dados_para_tree)
-            for indice_csv_oculto in colunas_ocultas_indices:
-                if indice_csv_oculto is not None and (indice_csv_oculto + 1) < len(dados_finais):
-                    dados_finais[indice_csv_oculto + 1] = "---"
-            tree.insert("", "end", values=dados_finais)
+            # A lógica de ocultar "---" precisa ser re-mapeada para as colunas visíveis
+            # Simplificação: A lógica de filtragem de colunas já trata isso para a tree
+            # Vamos aplicar o "---" nos dados_aluno_filtrados antes de estender
+            
+            # --- Lógica de Ocultar Notas do Professor (Reaplicada) ---
+            # (Inicia em 4 por causa de: #, Nome, RA, Email)
+            idx_tree_atual = 4 
+            disciplina_prof = PROFESSOR_TO_COLNAME.get(usuario_logado, "")
+            
+            for disc_interna in LISTA_DISCIPLINAS:
+                # Se "Extra" não está visível, pula
+                if disc_interna == "Extra" and "Extra" not in PROFESSORES_POR_DISCIPLINA:
+                    continue
+                
+                if disc_interna != disciplina_prof:
+                    if idx_tree_atual < len(dados_para_tree):
+                        dados_para_tree[idx_tree_atual] = "---"
+                
+                idx_tree_atual += 1
+            
+            # Oculta Média Geral (última coluna)
+            if idx_tree_atual < len(dados_para_tree):
+                dados_para_tree[idx_tree_atual] = "---"
+            # --- FIM DA LÓGICA DE OCULTAR ---
+                
+            tree.insert("", "end", values=dados_para_tree)
         else:
-             while len(dados_para_tree) < len(todas_colunas_internas):
-                 dados_para_tree.append("")
-             tree.insert("", "end", values=dados_para_tree[:len(todas_colunas_internas)])
+             tree.insert("", "end", values=dados_para_tree)
 # --- FIM: mostrar_todos_alunos ---
 
 # --- INÍCIO: obter_indice_aluno ---
@@ -756,7 +911,12 @@ def mostrar_notas():
         else:
             texto = "Erro: Professor não associado a uma disciplina ou dados do aluno incompletos."
     else: # Admin ou Aluno veem tudo
+        # --- MUDANÇA: Pula "Extra" se não houver professor ---
         for disc_interna in LISTA_DISCIPLINAS:
+            if disc_interna == "Extra" and "Extra" not in PROFESSORES_POR_DISCIPLINA:
+                continue # Pula a disciplina
+            # --- FIM DA MUDANÇA ---
+                
             display_name = DISPLAY_NAMES.get(disc_interna, disc_interna)
             col_idx = COLUNA_MAP.get(disc_interna)
             if col_idx is not None and col_idx < len(aluno):
@@ -805,9 +965,10 @@ def gerar_grafico():
     medias_finais = []
     cores_finais = []
 
-    todas_disciplinas_internas = LISTA_DISCIPLINAS
+    # Mapa de cores baseado na LISTA_DISCIPLINAS (completa)
+    todas_disciplinas_map = {d: i for i, d in enumerate(LISTA_DISCIPLINAS)}
     todas_cores = ['#2196F3', '#FF9800', '#4CAF50', '#9C27B0', '#F44336']
-    while len(todas_cores) < len(todas_disciplinas_internas):
+    while len(todas_cores) < len(LISTA_DISCIPLINAS):
         todas_cores.append('#'+''.join(random.choices('0123456789ABCDEF', k=6)))
 
     if nivel_acesso_atual == "Professores":
@@ -823,24 +984,36 @@ def gerar_grafico():
             except Exception:
                 medias_finais.append(0.0)
             try:
-                idx_cor = todas_disciplinas_internas.index(disciplina_interna)
+                # Pega a cor do mapa completo
+                idx_cor = todas_disciplinas_map.get(disciplina_interna, 0)
                 cores_finais.append(todas_cores[idx_cor])
-            except ValueError:
+            except (ValueError, IndexError):
                 cores_finais.append(todas_cores[0])
         else:
             messagebox.showerror("Erro", "Professor não associado a uma disciplina.")
             return
     else: # Admin ou Aluno
-        disciplinas_finais_internas = todas_disciplinas_internas
-        cores_finais = todas_cores[:len(disciplinas_finais_internas)]
-        for i in range(3, 3 + len(LISTA_DISCIPLINAS)):
+        # --- MUDANÇA: Constrói as listas apenas com disciplinas visíveis ---
+        for disc_interna in LISTA_DISCIPLINAS:
+            if disc_interna == "Extra" and "Extra" not in PROFESSORES_POR_DISCIPLINA:
+                continue # Pula "Extra" se não tiver professor
+
+            disciplinas_finais_internas.append(disc_interna)
+            
+            # Pega a nota
+            col_idx = COLUNA_MAP.get(disc_interna)
             try:
-                if i < len(aluno):
-                    medias_finais.append(float(aluno[i]))
+                if col_idx is not None and col_idx < len(aluno):
+                    medias_finais.append(float(aluno[col_idx]))
                 else:
                     medias_finais.append(0.0)
             except Exception:
                 medias_finais.append(0.0)
+            
+            # Pega a cor
+            cor_idx = todas_disciplinas_map.get(disc_interna, 0)
+            cores_finais.append(todas_cores[cor_idx])
+        # --- FIM DA MUDANÇA ---
 
     fig, ax = plt.subplots(figsize=(7,4))
     disciplinas_finais_display = [DISPLAY_NAMES.get(d, d) for d in disciplinas_finais_internas]
@@ -891,7 +1064,6 @@ def mostrar_professores():
 # --- FIM: mostrar_professores ---
 
 # =================== I.A: análise disciplinar e mensagem personalizada ===================
-
 # --- INÍCIO: analisar_por_ia ---
 def analisar_por_ia():
     """Analisa as notas do aluno logado, identifica disciplina mais fraca/forte e mostra mensagem."""
@@ -915,23 +1087,39 @@ def analisar_por_ia():
         messagebox.showerror("Erro", "Cadastro do aluno não encontrado nos dados carregados.")
         return
 
-    disciplinas_internas = LISTA_DISCIPLINAS
+    # --- MUDANÇA: Filtra as disciplinas e notas ---
+    disciplinas_internas = []
     notas = []
-    for i in range(3, 3 + len(LISTA_DISCIPLINAS)):
+    for disc_interna in LISTA_DISCIPLINAS:
+        if disc_interna == "Extra" and "Extra" not in PROFESSORES_POR_DISCIPLINA:
+            continue # Pula "Extra" se não tiver professor
+        
+        disciplinas_internas.append(disc_interna)
+        col_idx = COLUNA_MAP.get(disc_interna)
         try:
-            if i < len(aluno):
-                notas.append(float(aluno[i]))
+            if col_idx is not None and col_idx < len(aluno):
+                notas.append(float(aluno[col_idx]))
             else:
                 notas.append(0.0)
         except Exception:
             notas.append(0.0)
+    # --- FIM DA MUDANÇA ---
 
-    if len(notas) != len(LISTA_DISCIPLINAS):
+
+    if len(notas) != len(disciplinas_internas): # Verificação de segurança
         media_geral = 0.0
     else:
-        media_geral = sum(notas) / len(notas) if notas else 0.0
+        # Calcula a média geral usando TODAS as notas (incluindo as invisíveis)
+        media_geral_completa_notas = []
+        for i in range(3, 3 + len(LISTA_DISCIPLINAS)):
+             try:
+                 if i < len(aluno): media_geral_completa_notas.append(float(aluno[i]))
+                 else: media_geral_completa_notas.append(0.0)
+             except Exception: media_geral_completa_notas.append(0.0)
+        media_geral = sum(media_geral_completa_notas) / len(media_geral_completa_notas) if media_geral_completa_notas else 0.0
 
-    notas_validas = [n for n in notas if n > 0.0]
+
+    notas_validas = [n for n in notas if n > 0.0] # Usa apenas notas visíveis > 0 para min/max
     if not notas_validas:
         messagebox.showinfo("I.A", "Você ainda não possui notas lançadas para análise.")
         return
@@ -1009,9 +1197,7 @@ def analisar_por_ia():
     j.winfo_children()[-1].focus_set()
 # --- FIM: analisar_por_ia ---
 
-
 # =================== LOGIN E HABILITAÇÃO DE BOTOES ===================
-
 # --- INÍCIO: verificar_credenciais (CORRIGIDO) ---
 def verificar_credenciais(usuario, senha):
     # Carrega dinamicamente credenciais de ALUNOS
@@ -1192,7 +1378,6 @@ def mostrar_janela_login():
     tk.Button(login_frame, text="Cadastrar Professor", bg=BTN_AMARELO_CADASTRO, fg=BG_DARK,
               command=lambda: iniciar_cadastro_professor(janela)).grid(row=4, column=0, columnspan=2, pady=5, sticky="ew")
 
-
     caminho_da_sua_imagem = os.path.join(BASE_PROJECT_DIR, "UNIP.jpg")
     # Atraso para garantir que a janela 'janela' está pronta
     janela.after(100, lambda: mostrar_janela_imagem_flutuante(janela, caminho_da_sua_imagem))
@@ -1324,7 +1509,7 @@ def cadastrar_novo_professor_interface(parent_window=None):
                                 parent=parent_window)
 
             if nivel_acesso_atual:
-                mostrar_todos_alunos()
+                mostrar_todos_alunos() # Redesenha a tabela principal se já estiver logado
         else:
             pass
 
@@ -1346,19 +1531,24 @@ def cadastrar_novo_professor_interface(parent_window=None):
     if salvar_credenciais_professor_csv(login, senha):
         if salvar_mapeamento_professor_csv(login, disciplina_interna):
             display_name_final = DISPLAY_NAMES.get(disciplina_interna, disciplina_interna)
-            # Atualiza os dicionários em memória imediatamente
+            
+            # --- MUDANÇA: Atualiza os dicts globais e redesenha a tabela ---
             PROFESSOR_TO_COLNAME[login] = disciplina_interna
             PROFESSORES_POR_DISCIPLINA[disciplina_interna] = login
             if substituir and prof_antigo and prof_antigo in PROFESSOR_TO_COLNAME:
                  del PROFESSOR_TO_COLNAME[prof_antigo]
-
+            
             messagebox.showinfo("Sucesso", f"Professor '{login}' cadastrado com sucesso para {display_name_final}!", parent=parent_window)
+            
+            # Se a interface principal já existir (Admin logado), redesenha
+            if 'tree' in globals() and tree is not None:
+                mostrar_todos_alunos()
+            # --- FIM DA MUDANÇA ---
         else:
             messagebox.showerror("Erro", "Credencial salva, mas houve erro ao salvar o mapeamento da disciplina.", parent=parent_window)
     else:
         messagebox.showerror("Erro", "Houve erro ao salvar as credenciais do professor.", parent=parent_window)
 # --- FIM: cadastrar_novo_professor_interface ---
-
 
 # =================== FUNÇÃO PARA CONSTRUIR INTERFACE PRINCIPAL ===================
 def construir_interface_principal():
@@ -1406,9 +1596,7 @@ def construir_interface_principal():
     habilitar_botoes(nivel_acesso_atual)
 # --- FIM FUNÇÃO CONSTRUIR INTERFACE ---
 
-
 # =================== INTERFACE PRINCIPAL ===================
-
 janela = tk.Tk()
 janela.title("Sistema Acadêmico - Login Necessário")
 janela.config(bg=BG_DARK)
@@ -1434,7 +1622,6 @@ pos_y_login = (altura_tela // 2) - (altura_login // 2)
 geometria_login = f'{largura_login}x{altura_login}+{pos_x_login}+{pos_y_login}'
 
 # --- FIM DA INTERFACE PRINCIPAL (PARCIAL) ---
-
 
 # --- ÚLTIMAS LINHAS (LÓGICA CORRIGIDA) ---
 carregar_nomes_disciplinas()
