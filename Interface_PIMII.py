@@ -73,7 +73,7 @@ btn_gerar_grafico = None
 btn_ver_professores = None
 btn_ia = None
 btn_sair = None
-btn_excluir_usuarios = None # <-- Botão Excluir
+btn_excluir_usuarios = None 
 tree = None
 scrollbar = None
 # --- Fim Variáveis Globais ---
@@ -212,7 +212,6 @@ def salvar_credenciais_csv(login, senha):
     if linhas and linhas[0] == cabecalho:
         dados_sem_cabecalho = linhas[1:]
     elif linhas: # Arquivo tem dados, mas cabeçalho incorreto ou ausente
-        # Filtra para não adicionar o cabeçalho antigo aos dados
         dados_sem_cabecalho = [l for l in linhas if l[0].lower() != "login"]
     
     # Adiciona a nova linha de dados
@@ -361,7 +360,7 @@ def salvar_credenciais_professor_csv(login, senha):
     return salvar_linhas_csv(ARQUIVO_CREDENCIAIS_PROFESSORES, dados_sem_cabecalho, cabecalho)
 # --- FIM: salvar_credenciais_professor_csv ---
 
-# --- INÍCIO: salvar_mapeamento_professor_csv (ATUALIZADO) ---
+# --- INÍCIO: salvar_mapeamento_professor_csv (CORRIGIDO) ---
 def salvar_mapeamento_professor_csv(login, disciplina_interna):
     """Lê o arquivo de mapeamento, atualiza-o e o reescreve."""
     os.makedirs(CONFIDENTIAL_DATA_DIR, exist_ok=True)
@@ -390,19 +389,12 @@ def salvar_mapeamento_professor_csv(login, disciplina_interna):
 
     linhas_para_salvar = []
     # Adiciona o cabeçalho manualmente para a função salvar
-    linhas_para_salvar.append(cabecalho)
+    # linhas_para_salvar.append(cabecalho) # Erro, salvar_linhas_csv já faz isso
     for prof_login, disc in mapeamentos.items():
         linhas_para_salvar.append([prof_login, disc])
         
-    # Reescreve o arquivo
-    try:
-        with open(ARQUIVO_MAPEAMENTO_PROFESSORES, 'w', newline='', encoding='utf-8') as f:
-            writer = csv.writer(f)
-            writer.writerows(linhas_para_salvar)
-        return True
-    except Exception as e:
-        messagebox.showerror("Erro de Salvamento", f"Não foi possível salvar em {os.path.basename(ARQUIVO_MAPEAMENTO_PROFESSORES)}: {e}")
-        return False
+    # Salva o arquivo inteiro (sobrescrevendo)
+    return salvar_linhas_csv(ARQUIVO_MAPEAMENTO_PROFESSORES, linhas_para_salvar, cabecalho)
 # --- FIM: salvar_mapeamento_professor_csv ---
 
 # --- INÍCIO: carregar_dados_professores ---
@@ -458,8 +450,6 @@ def _posicionar_imagem_flutuante(janela_pai, caminho_imagem):
         janela_imagem_fundo = tk.Toplevel(janela_pai, bg=FRAME_BG)
         janela_imagem_fundo.title("Imagem Flutuante")
         janela_imagem_fundo.attributes('-topmost', True)
-        # janela_imagem_fundo.overrideredirect(True) 
-        # --- FIM DA CORREÇÃO ---
 
         img_pil = Image.open(caminho_imagem).convert("RGB")
         img_redimensionada = img_pil.resize((largura_img, altura_img), Image.LANCZOS)
@@ -622,13 +612,12 @@ def lancar_nota():
         disciplina_nome_display = DISPLAY_NAMES.get(disciplina_interna, disciplina_interna)
 
     try:
-        # Garante que len(dados_alunos) é maior que 0
         if not dados_alunos:
              messagebox.showwarning("Aviso", "Nenhum aluno para selecionar.")
              return
         num = simpledialog.askinteger(
             "Lançar Nota",
-            f"PROFESSOR {usuario_logado.upper()} ({disciplina_nome_display.upper()})\n\nDigite o número do aluno (1 a {len(dados_alunos)}) para lançar nota:",
+            f"PROFESSOR {usuario_logado.upper()} ({disciplina_nome_display.upper()})\n\nDigite o número do aluno (1 a {len(dados_alunos)}):",
             parent=janela, minvalue=1, maxvalue=len(dados_alunos)
         )
         if num is None: return
@@ -640,7 +629,7 @@ def lancar_nota():
     if not (0 <= indice_aluno < len(dados_alunos)):
          messagebox.showerror("Erro", "Número do aluno inválido.")
          return
-    aluno_selecionado = dados_alunos[indice_aluno] # Faz cópia da lista interna
+    aluno_selecionado = dados_alunos[indice_aluno] 
 
     try:
         nova_nota_str = simpledialog.askstring(
@@ -654,24 +643,21 @@ def lancar_nota():
             messagebox.showerror("Erro", "A nota deve ser entre 0.0 e 10.0.")
             return
         
-        # Cria uma cópia para modificar, para não alterar dados_alunos diretamente
         aluno_modificado = list(aluno_selecionado)
         aluno_modificado[coluna_indice] = f"{nova_nota:.2f}"
-        _recalcular_media_geral(aluno_modificado) # Recalcula a média na cópia
+        _recalcular_media_geral(aluno_modificado) 
 
         if caminho_arquivo_atual:
             try:
-                # Usa ler_linhas_csv para obter dados limpos
                 linhas = ler_linhas_csv(caminho_arquivo_atual)
-                if linhas is None: return # Erro na leitura
+                if linhas is None: return 
                 
-                cabecalho = linhas.pop(0) # Salva e remove o cabeçalho
+                cabecalho = linhas.pop(0) 
 
                 if 0 <= indice_aluno < len(linhas):
-                    # Compara RA (índice 1) para garantir
                     if linhas[indice_aluno][1] == aluno_modificado[1]:
-                         linhas[indice_aluno] = aluno_modificado # Substitui a linha na lista
-                    else: # Fallback: procura pelo RA
+                         linhas[indice_aluno] = aluno_modificado 
+                    else: 
                          found = False
                          for i in range(len(linhas)):
                              if (len(linhas[i]) >= 2 and linhas[i][1] == aluno_modificado[1]):
@@ -683,16 +669,13 @@ def lancar_nota():
                 else:
                      raise IndexError("Índice do aluno fora dos limites para atualização.")
 
-                # Usa salvar_linhas_csv para reescrever o arquivo com cabeçalho
                 if not salvar_linhas_csv(caminho_arquivo_atual, linhas, cabecalho):
                      raise Exception("Falha ao salvar linhas no CSV.")
 
             except Exception as e:
                 messagebox.showwarning("Aviso", f"Nota lançada no sistema, mas houve erro ao salvar no CSV: {e}")
-                # Se salvar falhou, reverte a mudança na memória (opcional, mas seguro)
                 return 
         
-        # Se salvou com sucesso, atualiza a memória
         dados_alunos[indice_aluno] = aluno_modificado
         
         mostrar_todos_alunos()
@@ -720,9 +703,8 @@ def mostrar_todos_alunos():
             else:
                 print(f"Aviso: Aluno com formato inesperado encontrado: {aluno}")
 
-    # --- Lógica de Colunas Visíveis ---
     colunas_visiveis_tree = ["#", "Nome", "RA", "Email"]
-    indices_dados_visiveis = [0, 1, 2] # Índices de Nome, RA, Email em 'linha_completa'
+    indices_dados_visiveis = [0, 1, 2]
     
     colunas_notas_visiveis = []
     for disc_interna in LISTA_DISCIPLINAS:
@@ -734,7 +716,6 @@ def mostrar_todos_alunos():
     colunas_visiveis_tree.append("Media Geral")
     indices_dados_visiveis.append(COLUNA_MAP.get("Media Geral"))
     colunas_notas_visiveis.append("Media Geral")
-    # --- Fim da Lógica ---
         
     tree["columns"] = colunas_visiveis_tree
     tree["show"] = "headings"
@@ -745,7 +726,7 @@ def mostrar_todos_alunos():
         "Extra": 90, "Media Geral": 90
     }
 
-    colunas_notas = set(colunas_notas_visiveis) # Usa apenas as notas visíveis
+    colunas_notas = set(colunas_notas_visiveis)
 
     for col_interna in colunas_visiveis_tree:
         display_text = DISPLAY_NAMES.get(col_interna, col_interna)
@@ -759,12 +740,12 @@ def mostrar_todos_alunos():
             if idx is not None and 0 <= idx < len(linha_completa):
                 dados_para_tree.append(linha_completa[idx])
             else:
-                dados_para_tree.append("N/A") # Dado ausente
+                dados_para_tree.append("N/A")
 
         if nivel_acesso_atual == "Professores":
             disciplina_prof = PROFESSOR_TO_COLNAME.get(usuario_logado, "")
             
-            col_idx_tree = 4 # Começa em 4 (#, Nome, RA, Email)
+            col_idx_tree = 4 
             for disc_interna in LISTA_DISCIPLINAS:
                 if disc_interna == "Extra" and "Extra" not in PROFESSORES_POR_DISCIPLINA:
                     continue
@@ -1139,16 +1120,15 @@ def excluir_aluno():
         if linhas_alunos is None: return # Erro de leitura
 
         cabecalho_alunos = ["Nome","RA","Email"] + LISTA_DISCIPLINAS + ["Media Geral"]
+        dados_sem_cabecalho = []
         if linhas_alunos and linhas_alunos[0] == cabecalho_alunos:
-            linhas_alunos.pop(0) # Remove cabeçalho para processar
-        else:
+            dados_sem_cabecalho = linhas_alunos[1:]
+        elif linhas_alunos:
              print("Aviso: Cabeçalho do alunos.csv ausente ou inválido.")
-             # Tenta processar mesmo assim, mas pode falhar se a linha 0 for dados
-             if linhas_alunos and (linhas_alunos[0][0] == "Nome"): # Remove se for cabeçalho
-                 linhas_alunos.pop(0)
-
+             dados_sem_cabecalho = [l for l in linhas_alunos if l[0].lower() != "nome"]
+        
         dados_alunos_csv = []
-        for linha in linhas_alunos:
+        for linha in dados_sem_cabecalho:
             if len(linha) > 2 and linha[1].strip() == ra_para_excluir:
                 aluno_encontrado_nome = linha[0] # Salva o nome
                 email_aluno = linha[2].strip() # Salva o email
@@ -1159,11 +1139,9 @@ def excluir_aluno():
             messagebox.showerror("Erro", f"Aluno com RA '{ra_para_excluir}' não encontrado em {DEFAULT_CSV_FILE}.", parent=janela)
             return
 
-        # Salva o arquivo de alunos de volta
         if not salvar_linhas_csv(DEFAULT_CSV_FILE_PATH, dados_alunos_csv, cabecalho_alunos):
              raise Exception("Falha ao salvar arquivo de alunos.")
         
-        # Extrai o login do email (ex: "david@unip.com" -> "david")
         if email_aluno and "@" in email_aluno:
             login_aluno_excluido = email_aluno.split('@')[0].lower()
         
@@ -1178,26 +1156,25 @@ def excluir_aluno():
             if linhas_creds is None: return
 
             cabecalho_creds = ["Login", "Senha"]
-            if linhas_creds and linhas_creds[0] == cabecalho_creds:
-                 linhas_creds.pop(0)
-            else:
-                 print("Aviso: Cabeçalho do credenciais_alunos.csv ausente ou inválido.")
-                 if linhas_creds and linhas_creds[0][0] == "Login":
-                     linhas_creds.pop(0)
-
             dados_creds_csv = []
+            if linhas_creds and linhas_creds[0] == cabecalho_creds:
+                 dados_creds_csv = linhas_creds[1:]
+            elif linhas_creds:
+                 print("Aviso: Cabeçalho do credenciais_alunos.csv ausente ou inválido.")
+                 dados_creds_csv = [l for l in linhas_creds if l[0].lower() != "login"]
+
+            dados_creds_filtrados = []
             creds_excluidas = 0
-            for linha in linhas_creds:
-                # --- CORREÇÃO: Compara login exato (índice 0) ---
+            for linha in dados_creds_csv:
                 if len(linha) > 0 and linha[0].strip().lower() == login_aluno_excluido:
                     creds_excluidas += 1
                 else:
-                    dados_creds_csv.append(linha)
+                    dados_creds_filtrados.append(linha)
 
             if creds_excluidas == 0:
                  print(f"Aviso: Aluno com RA {ra_para_excluir} excluído, mas credencial '{login_aluno_excluido}' não encontrada.")
             
-            salvar_linhas_csv(ARQUIVO_CREDENCIAIS, dados_creds_csv, cabecalho_creds)
+            salvar_linhas_csv(ARQUIVO_CREDENCIAIS, dados_creds_filtrados, cabecalho_creds)
         
         except Exception as e:
             messagebox.showerror("Erro (Credenciais)", f"Falha ao processar arquivo de credenciais: {e}", parent=janela)
@@ -1207,7 +1184,6 @@ def excluir_aluno():
 
     # 3. Atualizar a interface
     messagebox.showinfo("Sucesso", f"Aluno '{aluno_encontrado_nome}' (RA: {ra_para_excluir}) e credenciais associadas foram excluídos.", parent=janela)
-    # Recarrega os dados na tabela da GUI
     selecionar_arquivo(caminho=caminho_arquivo_atual or DEFAULT_CSV_FILE_PATH)
 # --- FIM: excluir_aluno ---
 
@@ -1231,14 +1207,16 @@ def excluir_professor():
         if linhas_creds_prof is None: return
 
         cabecalho_creds = ["Login", "Senha"]
+        dados_sem_cabecalho = []
         if linhas_creds_prof and linhas_creds_prof[0] == cabecalho_creds:
-             linhas_creds_prof.pop(0)
-        else:
+             dados_sem_cabecalho = linhas_creds_prof[1:]
+        elif linhas_creds_prof:
              print("Aviso: Cabeçalho do credenciais_professores.csv ausente ou inválido.")
-
-        novos_dados_creds = [l for l in linhas_creds_prof if l and l[0].strip().lower() != login_para_excluir]
+             dados_sem_cabecalho = [l for l in linhas_creds_prof if l[0].lower() != "login"]
         
-        if len(novos_dados_creds) == len(linhas_creds_prof):
+        novos_dados_creds = [l for l in dados_sem_cabecalho if l and l[0].strip().lower() != login_para_excluir]
+        
+        if len(novos_dados_creds) == len(dados_sem_cabecalho): # Compara listas sem cabeçalho
             messagebox.showerror("Erro", f"Professor com login '{login_para_excluir}' não encontrado nas credenciais.", parent=janela)
             return # Para se não encontrou
 
@@ -1253,12 +1231,14 @@ def excluir_professor():
         if linhas_map_prof is None: return
 
         cabecalho_map = ["Login", "Disciplina"]
+        dados_sem_cabecalho_map = []
         if linhas_map_prof and linhas_map_prof[0] == cabecalho_map:
-             linhas_map_prof.pop(0)
-        else:
+             dados_sem_cabecalho_map = linhas_map_prof[1:]
+        elif linhas_map_prof:
             print("Aviso: Cabeçalho do professores.csv ausente ou inválido.")
+            dados_sem_cabecalho_map = [l for l in linhas_map_prof if l[0].lower() != "login"]
 
-        novos_dados_map = [l for l in linhas_map_prof if l and l[0].strip().lower() != login_para_excluir]
+        novos_dados_map = [l for l in dados_sem_cabecalho_map if l and l[0].strip().lower() != login_para_excluir]
         salvar_linhas_csv(ARQUIVO_MAPEAMENTO_PROFESSORES, novos_dados_map, cabecalho_map)
 
     except Exception as e:
@@ -1322,7 +1302,6 @@ def verificar_credenciais(usuario, senha):
 
 # --- INÍCIO: habilitar_botoes ---
 def habilitar_botoes(nivel):
-    # Verifica se os botões já foram criados
     if 'btn_selecionar' not in globals() or btn_selecionar is None:
          return 
 
@@ -1334,7 +1313,7 @@ def habilitar_botoes(nivel):
         "professores": btn_ver_professores,
         "ia": btn_ia,
         "excluir": btn_excluir_usuarios,
-        # "sair": btn_sair # --- REMOVIDO ---
+        "sair": btn_sair # btn_sair é None, mas a chave existe
     }
 
     for btn_widget in botoes.values():
@@ -1381,9 +1360,8 @@ def habilitar_botoes(nivel):
                      if key not in botoes_visiveis:
                           btn.config(state=tk.DISABLED, bg=BTN_ROXO_BASE)
                           if key == "ia": btn.config(bg=BTN_ROXO_BASE)
-                          if key == "excluir": # "sair" removido
+                          if key == "excluir": 
                               btn.config(bg=BTN_EXIT_BG)
-                     # Lógica do 'sair' removida daqui
             except tk.TclError:
                  pass
 # --- FIM: habilitar_botoes ---
@@ -1450,7 +1428,7 @@ def mostrar_janela_login():
     # Centraliza a janela (que está no tamanho de login)
     janela.geometry(geometria_login) 
     
-    # Traz a janela para frente caso esteja escondida (embora não deva estar)
+    # Traz a janela para frente
     janela.deiconify()
     janela.attributes('-topmost', True)
     janela.attributes('-topmost', False)
@@ -1649,6 +1627,10 @@ def cadastrar_novo_professor_interface(parent_window=None):
                  del PROFESSOR_TO_COLNAME[prof_antigo]
 
             messagebox.showinfo("Sucesso", f"Professor '{login}' cadastrado com sucesso para {display_name_final}!", parent=parent_window)
+            
+            # Se a interface principal já existir (Admin logado), redesenha
+            if 'tree' in globals() and tree is not None:
+                mostrar_todos_alunos()
         else:
             messagebox.showerror("Erro", "Credencial salva, mas houve erro ao salvar o mapeamento da disciplina.", parent=parent_window)
     else:
@@ -1690,8 +1672,7 @@ def construir_interface_principal():
     
     btn_excluir_usuarios = tk.Button(frame_botoes, text="Excluir Usuário", command=excluir_usuario, bg=BTN_EXIT_BG, fg=BTN_FG)
     
-    # Definimos btn_sair como None para que habilitar_botoes não falhe
-    btn_sair = None 
+    btn_sair = None # Botão Sair foi removido
 
     frame_tree = tk.Frame(frame_principal_interativo, bg=BG_DARK)
     frame_tree.pack(padx=10, pady=10, fill=tk.BOTH, expand=True)
