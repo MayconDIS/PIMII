@@ -525,8 +525,6 @@ void cadastrar_professor() {
 }
 // --- FIM: cadastrar_professor ---
 
-// --- EXCLUSÃO (NOVAS FUNÇÕES) ---
-
 // --- INÍCIO: excluir_aluno ---
 void excluir_aluno() {
     char ra_para_excluir[MAX_RA];
@@ -595,7 +593,6 @@ void excluir_aluno() {
          printf("Arquivo de alunos '%s' esta vazio ou nao foi encontrado.\n", ARQ_ALUNOS);
          return;
     }
-
 
     // 2. Processar arquivo de credenciais de alunos
     if (strlen(login_para_excluir) == 0) {
@@ -691,7 +688,6 @@ void excluir_professor() {
          return;
     }
 
-
     // 2. Processar professores.csv (Mapeamento)
     ler_mapeamentos_professores(); // Carrega na memória
     ProfessorMap novos_mapeamentos[MAX_PROFESSORES];
@@ -735,7 +731,6 @@ void excluir_usuario() {
     }
 }
 // --- FIM: excluir_usuario ---
-
 
 // --- MAIN ---
 // --- INÍCIO: main ---

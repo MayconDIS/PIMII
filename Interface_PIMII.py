@@ -78,9 +78,7 @@ tree = None
 scrollbar = None
 # --- Fim Variáveis Globais ---
 
-
 # =================== UTILIDADES ===================
-
 # --- INÍCIO: carregar_nomes_disciplinas ---
 def carregar_nomes_disciplinas():
     """Carrega os nomes de exibição das disciplinas a partir do CSV."""
@@ -425,9 +423,7 @@ def carregar_dados_professores():
     print("Dados de professores carregados e mesclados.")
 # --- FIM: carregar_dados_professores ---
 
-
 # =================== JANELA FLUTUANTE (IMAGEM) ===================
-
 # --- INÍCIO: mostrar_janela_imagem_flutuante ---
 def mostrar_janela_imagem_flutuante(janela_pai, caminho_imagem):
     """Cria e posiciona uma janela de imagem abaixo da janela de login."""
@@ -462,8 +458,6 @@ def _posicionar_imagem_flutuante(janela_pai, caminho_imagem):
         janela_imagem_fundo = tk.Toplevel(janela_pai, bg=FRAME_BG)
         janela_imagem_fundo.title("Imagem Flutuante")
         janela_imagem_fundo.attributes('-topmost', True)
-        
-        # --- LINHA CORRIGIDA (Removida) ---
         # janela_imagem_fundo.overrideredirect(True) 
         # --- FIM DA CORREÇÃO ---
 
@@ -497,9 +491,7 @@ def fechar_janela_imagem_fundo(*args):
         janela_imagem_fundo = None
 # --- FIM: fechar_janela_imagem_fundo ---
 
-
 # =================== FUNÇÕES DE DADOS E INTERFACE ===================
-
 # --- INÍCIO: selecionar_arquivo ---
 def selecionar_arquivo(caminho=None):
     global caminho_arquivo_atual, dados_alunos
@@ -1001,7 +993,6 @@ def mostrar_professores():
 # --- FIM: mostrar_professores ---
 
 # =================== I.A: análise disciplinar e mensagem personalizada ===================
-
 # --- INÍCIO: analisar_por_ia ---
 def analisar_por_ia():
     """Analisa as notas do aluno logado, identifica disciplina mais fraca/forte e mostra mensagem."""
@@ -1194,7 +1185,6 @@ def excluir_aluno():
                  if linhas_creds and linhas_creds[0][0] == "Login":
                      linhas_creds.pop(0)
 
-
             dados_creds_csv = []
             creds_excluidas = 0
             for linha in linhas_creds:
@@ -1214,7 +1204,6 @@ def excluir_aluno():
             return
     else:
          print(f"Aviso: Aluno com RA {ra_para_excluir} excluído, mas não foi possível deduzir o login (a partir do email {email_aluno}) para excluir credencial.")
-
 
     # 3. Atualizar a interface
     messagebox.showinfo("Sucesso", f"Aluno '{aluno_encontrado_nome}' (RA: {ra_para_excluir}) e credenciais associadas foram excluídos.", parent=janela)
@@ -1306,9 +1295,7 @@ def excluir_usuario():
         messagebox.showerror("Erro", f"Tipo de usuário '{tipo}' não reconhecido. Use 'aluno' ou 'professor'.", parent=janela)
 # --- FIM: excluir_usuario ---
 
-
 # =================== LOGIN E HABILITAÇÃO DE BOTOES ===================
-
 # --- INÍCIO: verificar_credenciais ---
 def verificar_credenciais(usuario, senha):
     # Carrega dinamicamente credenciais de ALUNOS
@@ -1468,7 +1455,6 @@ def mostrar_janela_login():
     janela.attributes('-topmost', True)
     janela.attributes('-topmost', False)
     janela.focus_force()
-
 
     login_frame = tk.Frame(janela, bg=FRAME_BG)
     login_frame_global = login_frame
@@ -1669,7 +1655,6 @@ def cadastrar_novo_professor_interface(parent_window=None):
         messagebox.showerror("Erro", "Houve erro ao salvar as credenciais do professor.", parent=parent_window)
 # --- FIM: cadastrar_novo_professor_interface ---
 
-
 # =================== FUNÇÃO PARA CONSTRUIR INTERFACE PRINCIPAL ===================
 def construir_interface_principal():
     global btn_selecionar, btn_lancar_notas, btn_ver_notas, btn_gerar_grafico
@@ -1705,10 +1690,6 @@ def construir_interface_principal():
     
     btn_excluir_usuarios = tk.Button(frame_botoes, text="Excluir Usuário", command=excluir_usuario, bg=BTN_EXIT_BG, fg=BTN_FG)
     
-    # --- LINHA REMOVIDA ---
-    # btn_sair = tk.Button(frame_botoes, text="Sair", command=janela.destroy, bg=BTN_EXIT_BG, fg=BTN_FG, font=("Arial", 10))
-    # --- FIM DA REMOÇÃO ---
-    
     # Definimos btn_sair como None para que habilitar_botoes não falhe
     btn_sair = None 
 
@@ -1725,9 +1706,7 @@ def construir_interface_principal():
     habilitar_botoes(nivel_acesso_atual)
 # --- FIM FUNÇÃO CONSTRUIR INTERFACE ---
 
-
 # =================== INTERFACE PRINCIPAL ===================
-
 janela = tk.Tk()
 janela.title("Sistema Acadêmico - Login Necessário")
 janela.config(bg=BG_DARK)
@@ -1753,7 +1732,6 @@ pos_y_login = (altura_tela // 2) - (altura_login // 2)
 geometria_login = f'{largura_login}x{altura_login}+{pos_x_login}+{pos_y_login}'
 
 # --- FIM DA INTERFACE PRINCIPAL (PARCIAL) ---
-
 
 # --- ÚLTIMAS LINHAS (LÓGICA CORRIGIDA) ---
 carregar_nomes_disciplinas()
