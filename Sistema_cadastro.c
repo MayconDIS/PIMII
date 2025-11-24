@@ -2,17 +2,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ctype.h> // Para tolower
-#include <time.h>  // Para fallback de login
+#include <ctype.h> 
+#include <time.h>  
 
 // Define a macro MKDIR corretamente dependendo do sistema operacional
 #if defined(_WIN32) || defined(_WIN64)
-    #include <direct.h> // Para _mkdir
+    #include <direct.h>
     #define MKDIR(path) _mkdir(path)
 #else
-    #include <sys/stat.h> // Para mkdir
-    #include <sys/types.h> // Para mkdir
-    #define MKDIR(path) mkdir((path), 0755) // 0755 são permissões padrão
+    #include <sys/stat.h> 
+    #include <sys/types.h> 
+    #define MKDIR(path) mkdir((path), 0755) 
 #endif
 
 // --- DEFINIÇÕES DE CAMINHO ATUALIZADAS ---
@@ -713,7 +713,7 @@ void excluir_professor() {
 }
 // --- FIM: excluir_professor ---
 
-// --- INÍCIO: excluir_usuario (NOVO) ---
+// --- INÍCIO: excluir_usuario ---
 void excluir_usuario() {
     char tipo[MAX_LOGIN];
     printf("\n=== Excluir Usuario ===\n");
@@ -779,7 +779,7 @@ int main() {
                 }
                 break;
             } 
-            case 3: // NOVO CASE
+            case 3:
             { 
                 printf("Digite a senha de administrador: ");
                 char senha_admin_digitada[MAX_SENHA];
@@ -795,13 +795,13 @@ int main() {
                 }
                 break;
             } 
-            case 4: // MUDOU DE 3 PARA 4
+            case 4: 
                 printf("Saindo...\n");
                 break;
             default:
                 printf("Opcao invalida.\n");
         }
-    } while (escolha != 4); // MUDOU DE 3 PARA 4
+    } while (escolha != 4);
 
     return 0;
 }

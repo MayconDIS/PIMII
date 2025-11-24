@@ -198,7 +198,7 @@ def salvar_linhas_csv(caminho_arquivo, linhas_de_dados, cabecalho_esperado):
         return False
 # --- FIM: Novas Funções Auxiliares ---
 
-# --- INÍCIO: salvar_credenciais_csv (CORRIGIDO) ---
+# --- INÍCIO: salvar_credenciais_csv ---
 def salvar_credenciais_csv(login, senha):
     """Lê, adiciona e reescreve o CSV de credenciais de alunos."""
     os.makedirs(CONFIDENTIAL_DATA_DIR, exist_ok=True) 
@@ -221,7 +221,7 @@ def salvar_credenciais_csv(login, senha):
     return salvar_linhas_csv(ARQUIVO_CREDENCIAIS, dados_sem_cabecalho, cabecalho)
 # --- FIM: salvar_credenciais_csv ---
 
-# --- INÍCIO: salvar_dados_no_csv (CORRIGIDO) ---
+# --- INÍCIO: salvar_dados_no_csv ---
 def salvar_dados_no_csv(caminho, dados_novos, modo='a'): # 'modo' não é mais usado
     """Lê, adiciona e reescreve o CSV de dados de alunos."""
     os.makedirs(CONFIDENTIAL_DATA_DIR, exist_ok=True) 
@@ -337,7 +337,7 @@ def carregar_mapeamento_professores():
     return novo_map
 # --- FIM: carregar_mapeamento_professores ---
 
-# --- INÍCIO: salvar_credenciais_professor_csv (CORRIGIDO) ---
+# --- INÍCIO: salvar_credenciais_professor_csv ---
 def salvar_credenciais_professor_csv(login, senha):
     """Lê, adiciona e reescreve o CSV de credenciais de professores."""
     os.makedirs(CONFIDENTIAL_DATA_DIR, exist_ok=True) 
@@ -360,7 +360,7 @@ def salvar_credenciais_professor_csv(login, senha):
     return salvar_linhas_csv(ARQUIVO_CREDENCIAIS_PROFESSORES, dados_sem_cabecalho, cabecalho)
 # --- FIM: salvar_credenciais_professor_csv ---
 
-# --- INÍCIO: salvar_mapeamento_professor_csv (CORRIGIDO) ---
+# --- INÍCIO: salvar_mapeamento_professor_csv ---
 def salvar_mapeamento_professor_csv(login, disciplina_interna):
     """Lê o arquivo de mapeamento, atualiza-o e o reescreve."""
     os.makedirs(CONFIDENTIAL_DATA_DIR, exist_ok=True)
@@ -1099,7 +1099,7 @@ def analisar_por_ia():
     j.winfo_children()[-1].focus_set()
 # --- FIM: analisar_por_ia ---
 
-# --- INÍCIO: excluir_aluno (CORRIGIDO) ---
+# --- INÍCIO: excluir_aluno ---
 def excluir_aluno():
     """(Admin) Remove um aluno dos arquivos alunos.csv e credenciais_alunos.csv."""
     global dados_alunos 
@@ -1459,7 +1459,6 @@ def mostrar_janela_login():
 
     tk.Button(login_frame, text="Cadastrar Professor", bg=BTN_AMARELO_CADASTRO, fg=BG_DARK,
               command=lambda: iniciar_cadastro_professor(janela)).grid(row=4, column=0, columnspan=2, pady=5, sticky="ew")
-
 
     caminho_da_sua_imagem = os.path.join(BASE_PROJECT_DIR, "UNIP.jpg")
     janela.after(100, lambda: mostrar_janela_imagem_flutuante(janela, caminho_da_sua_imagem))
