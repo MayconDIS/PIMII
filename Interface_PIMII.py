@@ -415,63 +415,6 @@ def carregar_dados_professores():
     print("Dados de professores carregados e mesclados.")
 # --- FIM: carregar_dados_professores ---
 
-# =================== JANELA FLUTUANTE (IMAGEM) ===================
-# --- INÍCIO: mostrar_janela_imagem_flutuante ---
-def mostrar_janela_imagem_flutuante(janela_pai, caminho_imagem):
-    """Cria e posiciona uma janela de imagem abaixo da janela de login."""
-    global janela_imagem_fundo
-    janela_pai.after(100, lambda: _posicionar_imagem_flutuante(janela_pai, caminho_imagem)) 
-
-def _posicionar_imagem_flutuante(janela_pai, caminho_imagem):
-     global janela_imagem_fundo
-     try:
-        if not janela_pai.winfo_exists(): return
-
-        janela_pai.update_idletasks()
-        pos_x_login = janela_pai.winfo_x()
-        pos_y_login = janela_pai.winfo_y()
-        largura_login = janela_pai.winfo_width()
-        altura_login = janela_pai.winfo_height()
-
-        largura_img = largura_login
-        altura_img = 100
-        MARGEM_VERTICAL = 40
-
-        if janela_imagem_fundo and janela_imagem_fundo.winfo_exists():
-            janela_imagem_fundo.geometry(f'{largura_img}x{altura_img}+{pos_x_login}+{pos_y_login + altura_login + MARGEM_VERTICAL}')
-            janela_imagem_fundo.lift()
-            janela_imagem_fundo.attributes('-topmost', True)
-            return
-
-        if not os.path.exists(caminho_imagem):
-            print(f"AVISO: Imagem flutuante '{caminho_imagem}' não encontrada.")
-            return
-
-        janela_imagem_fundo = tk.Toplevel(janela_pai, bg=FRAME_BG)
-        janela_imagem_fundo.title("Imagem Flutuante")
-        janela_imagem_fundo.attributes('-topmost', True)
-
-        img_pil = Image.open(caminho_imagem).convert("RGB")
-        img_redimensionada = img_pil.resize((largura_img, altura_img), Image.LANCZOS)
-        img_tk_local = ImageTk.PhotoImage(img_redimensionada)
-
-        label_fundo = tk.Label(janela_imagem_fundo, image=img_tk_local, bg=FRAME_BG)
-        label_fundo.pack(fill=tk.BOTH, expand=True)
-
-        janela_imagem_fundo.photo_image = img_tk_local
-
-        janela_imagem_fundo.geometry(f'{largura_img}x{altura_img}+{pos_x_login}+{pos_y_login + altura_login + MARGEM_VERTICAL}')
-        janela_imagem_fundo.lift()
-
-        janela_pai.bind("<Destroy>", fechar_janela_imagem_fundo, add="+")
-
-     except Exception as e:
-        print(f"ERRO ao mostrar imagem flutuante: {e}")
-        if janela_imagem_fundo and janela_imagem_fundo.winfo_exists():
-            janela_imagem_fundo.destroy()
-        janela_imagem_fundo = None
-# --- FIM: mostrar_janela_imagem_flutuante ---
-
 # --- INÍCIO: fechar_janela_imagem_fundo ---
 def fechar_janela_imagem_fundo(*args):
     """Fecha a janela flutuante."""
@@ -963,13 +906,20 @@ def mostrar_professores():
     janela_professores.title("Professores e Disciplinas")
     janela_professores.geometry("400x250")
     texto = "=== Professores por Disciplina ===\n\n"
+    
     for disc_interna in LISTA_DISCIPLINAS:
+        # NOVA LÓGICA: Se for "Extra" e não tiver professor, pula (não mostra)
+        if disc_interna == "Extra" and "Extra" not in PROFESSORES_POR_DISCIPLINA:
+            continue
+
         display_name = DISPLAY_NAMES.get(disc_interna, disc_interna)
         professor_login = PROFESSORES_POR_DISCIPLINA.get(disc_interna, None)
+        
         if professor_login:
              texto += f"{display_name}: {professor_login.capitalize()}\n"
         else:
              texto += f"{display_name}: (Vago)\n"
+             
     tk.Label(janela_professores, text=texto, font=("Arial", 12), justify=tk.LEFT, padx=20, pady=20).pack()
 # --- FIM: mostrar_professores ---
 
@@ -1460,10 +1410,8 @@ def mostrar_janela_login():
     tk.Button(login_frame, text="Cadastrar Professor", bg=BTN_AMARELO_CADASTRO, fg=BG_DARK,
               command=lambda: iniciar_cadastro_professor(janela)).grid(row=4, column=0, columnspan=2, pady=5, sticky="ew")
 
-    caminho_da_sua_imagem = os.path.join(BASE_PROJECT_DIR, "UNIP.jpg")
-    janela.after(100, lambda: mostrar_janela_imagem_flutuante(janela, caminho_da_sua_imagem))
-
-    janela.protocol("WM_DELETE_WINDOW", lambda: [fechar_janela_imagem_fundo(), janela.destroy()])
+    # Protocolo simplificado (apenas fecha a janela principal)
+    janela.protocol("WM_DELETE_WINDOW", janela.destroy)
     user_entry.focus_set()
 # --- FIM: mostrar_janela_login ---
 
@@ -1711,9 +1659,9 @@ pos_x_login = (largura_tela // 2) - (largura_login // 2)
 pos_y_login = (altura_tela // 2) - (altura_login // 2)
 geometria_login = f'{largura_login}x{altura_login}+{pos_x_login}+{pos_y_login}'
 
-# --- FIM DA INTERFACE PRINCIPAL (PARCIAL) ---
+# --- FIM DA INTERFACE PRINCIPAL ---
 
-# --- ÚLTIMAS LINHAS (LÓGICA CORRIGIDA) ---
+# --- ÚLTIMAS LINHAS ---
 carregar_nomes_disciplinas()
 carregar_dados_professores()
 
