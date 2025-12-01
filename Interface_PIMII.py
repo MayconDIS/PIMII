@@ -10,7 +10,8 @@ import io
 import random
 
 # =================== CONFIGS ===================
-BASE_PROJECT_DIR = r"C:\Users\mayco\Documents\GitHub\PIMII" # Adapte se necessário
+# ".\\" Pega automaticamente a pasta onde este arquivo .py está salvo
+BASE_PROJECT_DIR = r".\\" # C:\Users\mayco\Documents\GitHub\PIMII
 OUTPUT_DIR = os.path.join(BASE_PROJECT_DIR, "output")
 CONFIDENTIAL_DATA_DIR = os.path.join(OUTPUT_DIR, "dados_confidenciais")
 

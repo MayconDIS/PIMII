@@ -16,7 +16,8 @@
 #endif
 
 // --- DEFINIÇÕES DE CAMINHO ATUALIZADAS ---
-#define BASE_DIR "C:\\Users\\mayco\\Documents\\GitHub\\PIMII\\output\\" // Adapte se necessário
+// ".\\" Pega automaticamente a pasta onde este arquivo .c está salvo
+#define BASE_DIR ".\\" /* C:\\Users\\mayco\\Documents\\GitHub\\PIMII\\output\\ */
 #define CONFIDENTIAL_DIR BASE_DIR "dados_confidenciais\\"
 #define OUTPUT_DIR BASE_DIR // Mantém para o caso de arquivos não confidenciais no futuro
 
